@@ -1,0 +1,182 @@
+<?php
+
+namespace App\Http\Controllers\Teacher;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use App\Models\Group;
+use App\Models\User;
+use App\Models\Schedule;
+use Illuminate\Support\Facades\Auth;
+
+class StudentController extends Controller
+{
+    public function index()
+    {
+        $teacher = Auth::user();
+        
+        // Получаем все группы, где преподает учитель
+        $groups = Group::whereHas('schedules', function($query) use ($teacher) {
+            $query->where('teacher_id', $teacher->id);
+        })->with(['students' => function($query) {
+            $query->whereHas('role', function($roleQuery) {
+                $roleQuery->where('name', 'student');
+            })->orderBy('name');
+        }])->orderBy('name')->get();
+
+        return Inertia::render('Teacher/Students/Index', [
+            'groups' => $groups->map(function($group) {
+                return [
+                    'id' => $group->id,
+                    'name' => $group->name,
+                    'full_name' => $group->full_name,
+                    'students_count' => $group->students->count(),
+                    'students' => $group->students->map(function($student) {
+                        return [
+                            'id' => $student->id,
+                            'name' => $student->name,
+                            'last_name' => $student->last_name,
+                            'middle_name' => $student->middle_name,
+                            'full_name' => trim($student->last_name . ' ' . $student->name . ' ' . $student->middle_name),
+                            'email' => $student->email,
+                            'phone' => $student->phone,
+                        ];
+                    })
+                ];
+            })
+        ]);
+    }
+
+    public function show(Group $group)
+    {
+        $teacher = Auth::user();
+        
+        // Проверяем, что учитель преподает в этой группе
+        $hasAccess = Schedule::where('teacher_id', $teacher->id)
+            ->where('group_id', $group->id)
+            ->exists();
+            
+        if (!$hasAccess) {
+            abort(403, 'У вас нет доступа к этой группе');
+        }
+
+        // Получаем студентов группы
+        $students = $group->students()
+            ->whereHas('role', function($query) {
+                $query->where('name', 'student');
+            })
+            ->orderBy('name')
+            ->get(['id', 'name', 'last_name', 'middle_name', 'email', 'phone', 'address']);
+
+        // Получаем расписание уроков для этой группы
+        $schedules = Schedule::where('teacher_id', $teacher->id)
+            ->where('group_id', $group->id)
+            ->with(['lesson', 'subject'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function($schedule) {
+                return [
+                    'id' => $schedule->id,
+                    'lesson_title' => $schedule->lesson->title ?? 'Урок без названия',
+                    'subject_name' => $schedule->subject->name ?? 'Не указан',
+                    'day_of_week' => $schedule->day_of_week ?? '',
+                    'start_time' => $schedule->start_time ?? '',
+                    'end_time' => $schedule->end_time ?? '',
+                    'room' => $schedule->room ?? '',
+                    'semester' => $schedule->semester ?? '',
+                    'is_active' => $schedule->is_active ?? true,
+                ];
+            });
+
+        return Inertia::render('Teacher/Students/Show', [
+            'group' => [
+                'id' => $group->id,
+                'name' => $group->name,
+                'full_name' => $group->full_name,
+                'enrollment_year' => $group->enrollment_year,
+                'graduation_year' => $group->graduation_year,
+                'course' => $group->course,
+                'status' => $group->status,
+                'status_text' => $group->status_text,
+            ],
+            'students' => $students->map(function($student) {
+                return [
+                    'id' => $student->id,
+                    'name' => $student->name,
+                    'last_name' => $student->last_name,
+                    'middle_name' => $student->middle_name,
+                    'full_name' => trim($student->last_name . ' ' . $student->name . ' ' . $student->middle_name),
+                    'email' => $student->email,
+                    'phone' => $student->phone,
+                    'address' => $student->address,
+                ];
+            }),
+            'schedules' => $schedules,
+            'stats' => [
+                'total_students' => $students->count(),
+                'total_lessons' => $schedules->count(),
+                'active_lessons' => $schedules->where('is_active', true)->count(),
+            ]
+        ]);
+    }
+
+    public function showStudent(User $student)
+    {
+        $teacher = Auth::user();
+        
+        // Проверяем, что студент учится в группе, где преподает учитель
+        $hasAccess = $student->groups()
+            ->whereHas('schedules', function($query) use ($teacher) {
+                $query->where('teacher_id', $teacher->id);
+            })->exists();
+            
+        if (!$hasAccess) {
+            abort(403, 'У вас нет доступа к этому студенту');
+        }
+
+        // Получаем группы студента, где преподает учитель
+        $groups = $student->groups()
+            ->whereHas('schedules', function($query) use ($teacher) {
+                $query->where('teacher_id', $teacher->id);
+            })
+            ->with(['schedules' => function($query) use ($teacher) {
+                $query->where('teacher_id', $teacher->id)
+                    ->with(['lesson', 'subject']);
+            }])
+            ->get();
+
+        return Inertia::render('Teacher/Students/StudentShow', [
+            'student' => [
+                'id' => $student->id,
+                'name' => $student->name,
+                'last_name' => $student->last_name,
+                'middle_name' => $student->middle_name,
+                'full_name' => trim($student->last_name . ' ' . $student->name . ' ' . $student->middle_name),
+                'email' => $student->email,
+                'phone' => $student->phone,
+                'address' => $student->address,
+            ],
+            'groups' => $groups->map(function($group) {
+                return [
+                    'id' => $group->id,
+                    'name' => $group->name,
+                    'full_name' => $group->full_name,
+                    'schedules' => $group->schedules->map(function($schedule) {
+                        return [
+                            'id' => $schedule->id,
+                            'lesson_title' => $schedule->lesson->title ?? 'Урок без названия',
+                            'subject_name' => $schedule->subject->name ?? 'Не указан',
+                            'day_of_week' => $schedule->day_of_week ?? '',
+                            'start_time' => $schedule->start_time ?? '',
+                            'end_time' => $schedule->end_time ?? '',
+                            'room' => $schedule->room ?? '',
+                            'semester' => $schedule->semester ?? '',
+                            'is_active' => $schedule->is_active ?? true,
+                        ];
+                    })
+                ];
+            })
+        ]);
+    }
+}
