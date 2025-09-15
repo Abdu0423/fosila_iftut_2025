@@ -1,7 +1,8 @@
 <template>
-  <App>
-    <div class="schedule-page">
-      <v-row>
+  <Layout>
+    <v-container fluid>
+      <div class="schedule-page">
+        <v-row>
         <v-col cols="12">
           <h1 class="text-h4 mb-6">Мое расписание</h1>
         </v-col>
@@ -58,17 +59,18 @@
           </v-card>
         </v-col>
       </v-row>
-    </div>
-  </App>
+      </div>
+    </v-container>
+  </Layout>
 </template>
 
 <script>
-import App from '../App.vue'
+import Layout from '../Layout.vue'
 
 export default {
   name: 'ScheduleIndex',
   components: {
-    App
+    Layout
   },
   data() {
     return {

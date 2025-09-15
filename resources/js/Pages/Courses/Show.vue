@@ -1,7 +1,8 @@
 <template>
-  <App>
-    <div class="course-show-page">
-      <v-row>
+  <Layout>
+    <v-container fluid>
+      <div class="course-show-page">
+        <v-row>
         <v-col cols="12">
           <v-breadcrumbs :items="breadcrumbs" class="mb-4"></v-breadcrumbs>
           <h1 class="text-h4 mb-6">{{ course.name }}</h1>
@@ -50,17 +51,18 @@
           </v-card>
         </v-col>
       </v-row>
-    </div>
-  </App>
+      </div>
+    </v-container>
+  </Layout>
 </template>
 
 <script>
-import App from '../App.vue'
+import Layout from '../Layout.vue'
 
 export default {
   name: 'CourseShow',
   components: {
-    App
+    Layout
   },
   props: {
     course: {

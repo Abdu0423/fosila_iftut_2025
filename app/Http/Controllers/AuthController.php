@@ -36,22 +36,38 @@ class AuthController extends Controller
             Log::info('Пользователь успешно авторизован', [
                 'user_id' => $user->id,
                 'email' => $user->email,
-                'role' => $user->role ? $user->role->name : 'no role',
-                'is_admin' => $user->isAdmin()
+                'role_id' => $user->role_id,
+                'role' => $user->role ? $user->role->name : 'no role'
             ]);
-
-            if ($user->isAdmin()) {
+            
+            Log::info('Проверка роли пользователя', [
+                'role_id' => $user->role_id,
+                'role_name' => $user->role ? $user->role->name : 'no role'
+            ]);
+            
+            // Проверяем по role_id: 1 = admin, 2 = teacher, 3 = student
+            if ($user->role_id == 1) {
                 Log::info('Перенаправление администратора на /admin');
                 return redirect('/admin');
             }
 
-            if ($user->isTeacher()) {
+            if ($user->role_id == 2) {
                 Log::info('Перенаправление учителя на /teacher');
                 return redirect('/teacher');
             }
 
-            Log::info('Перенаправление студента на /dashboard');
-            return redirect('/dashboard');
+            if ($user->role_id == 3) {
+                Log::info('Перенаправление студента на /dashboard');
+                return redirect('/dashboard');
+            }
+
+            // Если роль не определена, перенаправляем на dashboard
+            Log::warning('Неопределенная роль пользователя, перенаправление на /dashboard', [
+                'user_id' => $user->id,
+                'role_id' => $user->role_id,
+                'role_name' => $user->role ? $user->role->name : 'no role'
+            ]);
+            return redirect()->intended('/dashboard');
         }
 
         Log::warning('Неудачная попытка входа', ['email' => $credentials['email']]);

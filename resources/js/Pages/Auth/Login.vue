@@ -31,6 +31,7 @@
                 :error-messages="form.errors.email"
                 :disabled="form.processing"
                 class="mb-4"
+                autocomplete="email"
                 required
               ></v-text-field>
 
@@ -47,6 +48,7 @@
                 :error-messages="form.errors.password"
                 :disabled="form.processing"
                 class="mb-6"
+                autocomplete="current-password"
                 required
               ></v-text-field>
 
@@ -126,7 +128,7 @@
           <v-card-actions class="pa-8 pt-0">
             <div class="text-center w-100">
               <p class="text-body-2 text-medium-emphasis mb-2">
-                © 2024 Fosila. Все права защищены.
+                © {{ currentYear }} Fosila. Все права защищены.
               </p>
               <div class="d-flex justify-center gap-4">
                 <v-btn
@@ -166,7 +168,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useForm, router } from '@inertiajs/vue3'
 
 const showPassword = ref(false)
@@ -177,13 +179,19 @@ const form = useForm({
   remember: false,
 })
 
+// Динамический год для футера
+const currentYear = computed(() => new Date().getFullYear())
+
 const submit = () => {
   console.log('Отправка формы входа:', form.data())
   
   form.post('/login', {
     onSuccess: (page) => {
       console.log('Успешный вход:', page)
-      console.log('URL после входа:', window.location.href)
+      // Принудительное обновление страницы для корректного перенаправления
+      setTimeout(() => {
+        window.location.href = '/dashboard'
+      }, 100)
     },
     onError: (errors) => {
       console.log('Ошибки входа:', errors)

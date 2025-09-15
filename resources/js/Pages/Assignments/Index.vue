@@ -1,7 +1,8 @@
 <template>
-  <App>
-    <div class="assignments-page">
-      <v-row>
+  <Layout>
+    <v-container fluid>
+      <div class="assignments-page">
+        <v-row>
         <v-col cols="12">
           <h1 class="text-h4 mb-6">Мои задания</h1>
         </v-col>
@@ -138,18 +139,19 @@
           </v-window>
         </v-col>
       </v-row>
-    </div>
-  </App>
+      </div>
+    </v-container>
+  </Layout>
 </template>
 
 <script>
 import { router } from '@inertiajs/vue3'
-import App from '../App.vue'
+import Layout from '../Layout.vue'
 
 export default {
   name: 'AssignmentsIndex',
   components: {
-    App
+    Layout
   },
   data() {
     return {

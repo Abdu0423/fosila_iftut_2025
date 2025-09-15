@@ -95,26 +95,8 @@
       </v-container>
     </v-main>
 
-    <!-- Уведомления -->
-    <v-snackbar
-      v-model="showNotifications"
-      :timeout="3000"
-      location="top"
-      color="info"
-    >
-      <v-icon class="mr-2">mdi-information</v-icon>
-      У вас {{ notifications.length }} новых уведомлений
-      
-      <template v-slot:actions>
-        <v-btn
-          color="white"
-          text
-          @click="showNotifications = false"
-        >
-          Закрыть
-        </v-btn>
-      </template>
-    </v-snackbar>
+    <!-- Глобальные уведомления -->
+    <NotificationSnackbar />
 
     <!-- Загрузка -->
     <v-overlay
@@ -133,6 +115,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { usePage, router } from '@inertiajs/vue3'
+import NotificationSnackbar from '../Components/NotificationSnackbar.vue'
 
 const page = usePage()
 

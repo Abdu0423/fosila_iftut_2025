@@ -288,7 +288,7 @@ const submitForm = () => {
       console.log('Перенаправление...')
     },
     onError: (errors) => {
-      console.error('Ошибки валидации:', errors)
+      console.error('Ошибки валидации:', errors)``
       console.error('Полные ошибки:', form.errors)
     },
     onFinish: () => {

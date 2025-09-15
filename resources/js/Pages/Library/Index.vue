@@ -1,7 +1,8 @@
 <template>
-  <App>
-    <div class="library-page">
-      <v-row>
+  <Layout>
+    <v-container fluid>
+      <div class="library-page">
+        <v-row>
         <v-col cols="12">
           <h1 class="text-h4 mb-6">Библиотека</h1>
         </v-col>
@@ -109,6 +110,7 @@
           ></v-pagination>
         </v-col>
       </v-row>
+      </div>
     </v-container>
     
     <!-- Диалог предварительного просмотра -->
@@ -147,17 +149,16 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-    </div>
-  </App>
+  </Layout>
 </template>
 
 <script>
-import App from '../App.vue'
+import Layout from '../Layout.vue'
 
 export default {
   name: 'LibraryIndex',
   components: {
-    App
+    Layout
   },
   data() {
     return {

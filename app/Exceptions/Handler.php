@@ -33,10 +33,57 @@ class Handler extends ExceptionHandler
                     return back()->withErrors($e->errors())->withInput();
                 }
                 
-                return response()->json([
-                    'message' => $e->getMessage(),
-                    'code' => $e->getCode(),
-                ], 500);
+                if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpException) {
+                    $statusCode = $e->getStatusCode();
+                    
+                    if ($statusCode === 403) {
+                        return \Inertia\Inertia::render('Errors/403', [
+                            'message' => $e->getMessage()
+                        ])->toResponse($request)->setStatusCode(403);
+                    }
+                    
+                    if ($statusCode === 404) {
+                        return \Inertia\Inertia::render('Errors/404')->toResponse($request)->setStatusCode(404);
+                    }
+                }
+                
+                // Обработка ошибок базы данных
+                if ($e instanceof \Illuminate\Database\QueryException) {
+                    $message = 'Произошла ошибка при работе с базой данных.';
+                    
+                    // Специальные сообщения для разных типов ошибок
+                    if (str_contains($e->getMessage(), 'Base table or view not found')) {
+                        $message = 'Таблица в базе данных не найдена. Обратитесь к администратору.';
+                    } elseif (str_contains($e->getMessage(), 'Duplicate entry')) {
+                        $message = 'Запись с такими данными уже существует.';
+                    } elseif (str_contains($e->getMessage(), 'Access denied')) {
+                        $message = 'Нет доступа к базе данных. Обратитесь к администратору.';
+                    }
+                    
+                    return back()->with('error', $message);
+                }
+                
+                // Обработка других исключений
+                if ($e instanceof \Exception) {
+                    $message = 'Произошла непредвиденная ошибка. Попробуйте еще раз.';
+                    
+                    // Логируем ошибку для отладки
+                    \Log::error('Inertia error', [
+                        'message' => $e->getMessage(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    
+                    return \Inertia\Inertia::render('Errors/500', [
+                        'message' => $message
+                    ])->toResponse($request)->setStatusCode(500);
+                }
+                
+                // Fallback для неизвестных ошибок
+                return \Inertia\Inertia::render('Errors/500', [
+                    'message' => 'Произошла ошибка. Попробуйте еще раз.'
+                ])->toResponse($request)->setStatusCode(500);
             }
         });
     }

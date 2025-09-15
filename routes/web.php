@@ -30,10 +30,10 @@ Route::middleware('auth')->group(function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
 
-// Dashboard (альтернативный маршрут)
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->name('dashboard');
+    // Dashboard (альтернативный маршрут)
+    Route::get('/dashboard', function () {
+        return Inertia::render('Dashboard');
+    })->name('dashboard');
 
 // Курсы
 Route::get('/courses', function () {
@@ -68,6 +68,12 @@ Route::get('/library', function () {
     return Inertia::render('Library/Index');
 })->name('library.index');
 
+// Тестовый маршрут для проверки уведомлений (удалить после тестирования)
+Route::get('/test-notification', function () {
+    return redirect()->back()->with('success', 'Тестовое уведомление об успехе!');
+})->name('test.notification');
+
+
 // Оценки
 Route::get('/grades', function () {
     return Inertia::render('Grades/Index');
@@ -89,6 +95,11 @@ Route::get('/settings', function () {
 Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     // Главная страница админа
     Route::get('/', function () {
+        \Log::info('Admin Dashboard: Запрос к /admin получен', [
+            'user_id' => auth()->id(),
+            'role_id' => auth()->user()->role_id,
+            'url' => request()->url()
+        ]);
         return Inertia::render('Admin/Dashboard');
     })->name('admin.dashboard');
     

@@ -1,7 +1,8 @@
 <template>
-  <App>
-    <div class="profile-page">
-      <v-row>
+  <Layout>
+    <v-container fluid>
+      <div class="profile-page">
+        <v-row>
         <v-col cols="12">
           <h1 class="text-h4 mb-6">Мой профиль</h1>
         </v-col>
@@ -193,6 +194,7 @@
           </v-card>
         </v-col>
       </v-row>
+      </div>
     </v-container>
     
     <!-- Диалог редактирования профиля -->
@@ -249,17 +251,16 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-    </div>
-  </App>
+  </Layout>
 </template>
 
 <script>
-import App from '../App.vue'
+import Layout from '../Layout.vue'
 
 export default {
   name: 'ProfileIndex',
   components: {
-    App
+    Layout
   },
   data() {
     return {

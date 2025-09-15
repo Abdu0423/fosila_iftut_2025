@@ -1,7 +1,8 @@
 <template>
-  <App>
-    <div class="grades-page">
-      <v-row>
+  <Layout>
+    <v-container fluid>
+      <div class="grades-page">
+        <v-row>
         <v-col cols="12">
           <h1 class="text-h4 mb-6">Мои оценки</h1>
         </v-col>
@@ -133,6 +134,7 @@
           </v-card>
         </v-col>
       </v-row>
+      </div>
     </v-container>
     
     <!-- Диалог просмотра задания -->
@@ -182,17 +184,16 @@
         </v-card-text>
       </v-card>
     </v-dialog>
-    </div>
-  </App>
+  </Layout>
 </template>
 
 <script>
-import App from '../App.vue'
+import Layout from '../Layout.vue'
 
 export default {
   name: 'GradesIndex',
   components: {
-    App
+    Layout
   },
   data() {
     return {
