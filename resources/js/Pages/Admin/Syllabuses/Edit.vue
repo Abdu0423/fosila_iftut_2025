@@ -1,5 +1,5 @@
 <template>
-  <AdminApp>
+  <Layout role="admin">
     <v-container fluid>
       <!-- Заголовок -->
       <v-row>
@@ -184,13 +184,13 @@
         </v-col>
       </v-row>
     </v-container>
-  </AdminApp>
+  </Layout>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { useForm, router } from '@inertiajs/vue3'
-import AdminApp from '../AdminApp.vue'
+import Layout from '../../Layout.vue'
 
 // Props из Inertia
 const props = defineProps({
@@ -266,7 +266,7 @@ const submitForm = () => {
   console.log('Form data:', form.data())
   console.log('Syllabus ID:', props.syllabus.id)
   
-  form.put(route('admin.syllabuses.update', props.syllabus.id), {
+  form.put(`/admin/syllabuses/${props.syllabus.id}`, {
     onSuccess: (page) => {
       console.log('Силлабус успешно обновлен', page)
     },

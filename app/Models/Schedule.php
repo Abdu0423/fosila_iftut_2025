@@ -10,7 +10,7 @@ class Schedule extends Model
     use HasFactory;
 
     protected $fillable = [
-        'lesson_id',
+        'subject_id',
         'teacher_id',
         'group_id',
         'semester',
@@ -30,9 +30,9 @@ class Schedule extends Model
         'is_active' => 'boolean',
     ];
 
-    public function lesson()
+    public function subject()
     {
-        return $this->belongsTo(Lesson::class);
+        return $this->belongsTo(Subject::class);
     }
 
     public function teacher()
@@ -45,8 +45,23 @@ class Schedule extends Model
         return $this->belongsTo(Group::class);
     }
 
-    public function subject()
+    /**
+     * Отношение к силлабусам (many-to-many)
+     */
+    public function syllabuses()
     {
-        return $this->hasOneThrough(Subject::class, Lesson::class, 'id', 'id', 'lesson_id', 'subject_id');
+        return $this->belongsToMany(Syllabus::class, 'schedule_syllabus')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Отношение к урокам (many-to-many)
+     */
+    public function lessons()
+    {
+        return $this->belongsToMany(Lesson::class, 'lesson_schedule')
+                    ->withPivot(['order', 'duration', 'start_time', 'end_time', 'room', 'notes'])
+                    ->withTimestamps()
+                    ->orderBy('lesson_schedule.order');
     }
 }

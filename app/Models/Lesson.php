@@ -42,6 +42,8 @@ class Lesson extends Model
 
     public function schedules()
     {
-        return $this->hasMany(Schedule::class);
+        return $this->belongsToMany(Schedule::class, 'lesson_schedule')
+                    ->withPivot(['order', 'duration', 'start_time', 'end_time', 'room', 'notes'])
+                    ->withTimestamps();
     }
 }

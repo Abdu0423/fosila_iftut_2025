@@ -21,7 +21,7 @@ class Syllabus extends Model
         'file_name',
         'file_type',
         'file_size',
-        'lesson_id',
+        'subject_id',
         'creation_year',
         'created_by'
     ];
@@ -32,11 +32,11 @@ class Syllabus extends Model
     ];
 
     /**
-     * Отношение к уроку
+     * Отношение к предмету
      */
-    public function lesson()
+    public function subject()
     {
-        return $this->belongsTo(Lesson::class);
+        return $this->belongsTo(Subject::class);
     }
 
     /**
@@ -45,6 +45,15 @@ class Syllabus extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Отношение к расписаниям (many-to-many)
+     */
+    public function schedules()
+    {
+        return $this->belongsToMany(Schedule::class, 'schedule_syllabus')
+                    ->withTimestamps();
     }
 
     /**

@@ -188,10 +188,7 @@ const submit = () => {
   form.post('/login', {
     onSuccess: (page) => {
       console.log('Успешный вход:', page)
-      // Принудительное обновление страницы для корректного перенаправления
-      setTimeout(() => {
-        window.location.href = '/dashboard'
-      }, 100)
+      // Доверяем серверному перенаправлению - не делаем принудительный redirect
     },
     onError: (errors) => {
       console.log('Ошибки входа:', errors)

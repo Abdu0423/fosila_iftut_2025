@@ -1,5 +1,5 @@
 <template>
-  <AdminApp>
+  <Layout role="admin">
     <v-container fluid>
       <!-- Заголовок -->
       <v-row>
@@ -7,12 +7,12 @@
           <div class="d-flex justify-space-between align-center mb-6">
             <div>
               <h1 class="text-h4 font-weight-bold mb-2">Редактирование расписания</h1>
-              <p class="text-body-1 text-medium-emphasis">Изменение информации о расписании</p>
+              <p class="text-body-1 text-medium-emphasis">{{ schedule?.subject?.name || 'Загрузка...' }}</p>
             </div>
             <v-btn
               color="secondary"
               variant="outlined"
-              @click="navigateTo('/admin/schedules')"
+              @click="goBack"
               prepend-icon="mdi-arrow-left"
             >
               Назад к списку
@@ -22,72 +22,85 @@
       </v-row>
 
       <!-- Форма редактирования -->
-      <v-row>
-        <v-col cols="12" md="8">
+      <v-row v-if="schedule?.id">
+        <v-col cols="12" lg="8">
           <v-card>
-            <v-card-title class="text-h6">
-              <v-icon start>mdi-calendar-edit</v-icon>
+            <v-card-title class="text-h5 pa-6">
               Информация о расписании
             </v-card-title>
-            <v-card-text>
-              <v-form @submit.prevent="submitForm">
+            <v-card-text class="pa-6">
+              <v-form @submit.prevent="submit">
                 <v-row>
-                  <!-- Урок -->
+                  <!-- Предмет -->
                   <v-col cols="12" md="6">
                     <v-select
-                      v-model="form.lesson_id"
-                      :items="lessons"
+                      v-model="form.subject_id"
+                      :items="subjects || []"
                       item-title="name"
                       item-value="id"
-                      label="Урок *"
+                      label="Предмет *"
                       variant="outlined"
-                      :error-messages="form.errors.lesson_id"
+                      :error-messages="errors.subject_id"
                       required
-                    ></v-select>
+                    >
+                      <template v-slot:item="{ props, item }">
+                        <v-list-item v-bind="props">
+                          <v-list-item-title>{{ item.raw.name }}</v-list-item-title>
+                          <v-list-item-subtitle>{{ item.raw.code }}</v-list-item-subtitle>
+                        </v-list-item>
+                      </template>
+                    </v-select>
                   </v-col>
 
                   <!-- Преподаватель -->
                   <v-col cols="12" md="6">
                     <v-select
                       v-model="form.teacher_id"
-                      :items="teachers"
+                      :items="teachers || []"
                       item-title="name"
                       item-value="id"
                       label="Преподаватель *"
                       variant="outlined"
-                      :error-messages="form.errors.teacher_id"
+                      :error-messages="errors.teacher_id"
                       required
-                    ></v-select>
+                    >
+                      <template v-slot:item="{ props, item }">
+                        <v-list-item v-bind="props">
+                          <v-list-item-title>{{ item.raw.name }}</v-list-item-title>
+                          <v-list-item-subtitle>{{ item.raw.email }}</v-list-item-subtitle>
+                        </v-list-item>
+                      </template>
+                    </v-select>
                   </v-col>
 
                   <!-- Группа -->
                   <v-col cols="12" md="6">
                     <v-select
                       v-model="form.group_id"
-                      :items="groups"
+                      :items="groups || []"
                       item-title="name"
                       item-value="id"
                       label="Группа *"
                       variant="outlined"
-                      :error-messages="form.errors.group_id"
+                      :error-messages="errors.group_id"
                       required
-                    ></v-select>
+                    />
                   </v-col>
 
                   <!-- Семестр -->
                   <v-col cols="12" md="6">
                     <v-select
                       v-model="form.semester"
-                      :items="semesterOptions"
+                      :items="semesterItems"
                       label="Семестр *"
                       variant="outlined"
-                      :error-messages="form.errors.semester"
+                      :error-messages="errors.semester"
                       required
-                    ></v-select>
+                    />
                   </v-col>
 
                   <!-- Кредиты -->
-                  <v-col cols="12" md="4">
+                  <v-col cols="12" md="6">
                     <v-text-field
                       v-model.number="form.credits"
                       label="Количество кредитов *"
@@ -95,13 +108,13 @@
                       min="1"
                       max="10"
                       variant="outlined"
-                      :error-messages="form.errors.credits"
+                      :error-messages="errors.credits"
                       required
-                    ></v-text-field>
+                    />
                   </v-col>
 
                   <!-- Год обучения -->
-                  <v-col cols="12" md="4">
+                  <v-col cols="12" md="6">
                     <v-text-field
                       v-model.number="form.study_year"
                       label="Год обучения *"
@@ -109,150 +122,218 @@
                       min="2020"
                       max="2030"
                       variant="outlined"
-                      :error-messages="form.errors.study_year"
+                      :error-messages="errors.study_year"
                       required
-                    ></v-text-field>
+                    />
                   </v-col>
 
                   <!-- Порядок -->
-                  <v-col cols="12" md="4">
+                  <v-col cols="12" md="6">
                     <v-text-field
                       v-model.number="form.order"
-                      label="Порядок урока *"
+                      label="Порядковый номер *"
                       type="number"
                       min="1"
                       variant="outlined"
-                      :error-messages="form.errors.order"
+                      :error-messages="errors.order"
+                      hint="Порядок проведения занятия в расписании"
                       required
-                    ></v-text-field>
+                    />
                   </v-col>
 
-                  <!-- Запланированная дата -->
+                  <!-- Дата и время -->
                   <v-col cols="12" md="6">
                     <v-text-field
                       v-model="form.scheduled_at"
-                      label="Запланированная дата и время"
+                      label="Дата и время"
                       type="datetime-local"
                       variant="outlined"
-                      :error-messages="form.errors.scheduled_at"
-                    ></v-text-field>
+                      :error-messages="errors.scheduled_at"
+                      hint="Оставьте пустым, если дата не определена"
+                    />
                   </v-col>
 
                   <!-- Статус активности -->
-                  <v-col cols="12" md="6">
+                  <v-col cols="12">
                     <v-switch
                       v-model="form.is_active"
-                      label="Активно"
-                      color="success"
-                      :error-messages="form.errors.is_active"
-                    ></v-switch>
+                      label="Активное расписание"
+                      color="primary"
+                      :error-messages="errors.is_active"
+                      hide-details="auto"
+                    />
+                  </v-col>
+
+                  <!-- Силлабусы -->
+                  <v-col cols="12">
+                    <v-select
+                      v-model="form.syllabus_ids"
+                      :items="syllabuses || []"
+                      item-title="name"
+                      item-value="id"
+                      label="Силлабусы"
+                      variant="outlined"
+                      multiple
+                      chips
+                      :error-messages="errors.syllabus_ids"
+                      hint="Выберите силлабусы для данного расписания"
+                      persistent-hint
+                    >
+                      <template v-slot:chip="{ props, item }">
+                        <v-chip
+                          v-bind="props"
+                          :text="item.raw.name"
+                          size="small"
+                          closable
+                        />
+                      </template>
+                      <template v-slot:item="{ props, item }">
+                        <v-list-item v-bind="props">
+                          <v-list-item-title>{{ item.raw.name }}</v-list-item-title>
+                          <v-list-item-subtitle v-if="item.raw.lesson">
+                            Урок: {{ item.raw.lesson.name }} | Год: {{ item.raw.creation_year }}
+                          </v-list-item-subtitle>
+                        </v-list-item>
+                      </template>
+                    </v-select>
+                  </v-col>
+
+                  <!-- Уроки -->
+                  <v-col cols="12">
+                    <v-select
+                      v-model="form.lesson_ids"
+                      :items="lessons || []"
+                      item-title="title"
+                      item-value="id"
+                      label="Уроки"
+                      variant="outlined"
+                      multiple
+                      chips
+                      :error-messages="errors.lesson_ids"
+                      hint="Выберите уроки для данного расписания"
+                      persistent-hint
+                    >
+                      <template v-slot:chip="{ props, item }">
+                        <v-chip
+                          v-bind="props"
+                          :text="item.raw.title"
+                          size="small"
+                          closable
+                        />
+                      </template>
+                      <template v-slot:item="{ props, item }">
+                        <v-list-item v-bind="props">
+                          <v-list-item-title>{{ item.raw.title }}</v-list-item-title>
+                          <v-list-item-subtitle v-if="item.raw.subject">
+                            Предмет: {{ item.raw.subject.name }} | Длительность: {{ item.raw.duration || 90 }} мин
+                          </v-list-item-subtitle>
+                        </v-list-item>
+                      </template>
+                    </v-select>
                   </v-col>
                 </v-row>
 
-                <!-- Кнопки действий -->
-                <v-row class="mt-6">
-                  <v-col cols="12">
-                    <div class="d-flex gap-3">
-                      <v-btn
-                        type="submit"
-                        color="primary"
-                        size="large"
-                        :loading="form.processing"
-                        prepend-icon="mdi-content-save"
-                      >
-                        Сохранить изменения
-                      </v-btn>
-                      
-                      <v-btn
-                        color="secondary"
-                        variant="outlined"
-                        size="large"
-                        @click="resetForm"
-                        prepend-icon="mdi-refresh"
-                      >
-                        Сбросить
-                      </v-btn>
-                      
-                      <v-btn
-                        color="secondary"
-                        variant="outlined"
-                        size="large"
-                        @click="navigateTo('/admin/schedules')"
-                        prepend-icon="mdi-close"
-                      >
-                        Отмена
-                      </v-btn>
-                    </div>
-                  </v-col>
-                </v-row>
+                <div class="d-flex gap-3 mt-6">
+                  <v-btn
+                    @click="goBack"
+                    variant="outlined"
+                  >
+                    Отмена
+                  </v-btn>
+                  <v-btn
+                    type="submit"
+                    color="primary"
+                    :loading="processing"
+                    :disabled="processing || !schedule?.id"
+                  >
+                    Сохранить изменения
+                  </v-btn>
+                </div>
               </v-form>
             </v-card-text>
           </v-card>
         </v-col>
 
-        <!-- Информационная панель -->
-        <v-col cols="12" md="4">
+        <!-- Боковая панель со статистикой -->
+        <v-col cols="12" lg="4">
           <v-card>
-            <v-card-title class="text-h6">
-              <v-icon start>mdi-information</v-icon>
-              Информация
+            <v-card-title class="text-h6 pa-4">
+              <v-icon icon="mdi-chart-bar" class="mr-2"></v-icon>
+              Статистика
             </v-card-title>
-            <v-card-text>
-              <div class="text-body-2 mb-4">
-                <strong>ID записи:</strong> {{ schedule.id }}
-              </div>
-              
-              <div class="text-body-2 mb-4">
-                <strong>Урок:</strong> Выберите урок из списка доступных уроков.
-              </div>
-              
-              <div class="text-body-2 mb-4">
-                <strong>Преподаватель:</strong> Выберите преподавателя, который будет вести урок.
-              </div>
-              
-              <div class="text-body-2 mb-4">
-                <strong>Группа:</strong> Выберите группу студентов для проведения урока.
-              </div>
-              
-              <div class="text-body-2 mb-4">
-                <strong>Семестр:</strong> Укажите семестр (1 или 2) для данного урока.
-              </div>
-              
-              <div class="text-body-2 mb-4">
-                <strong>Кредиты:</strong> Количество кредитов за данный урок (от 1 до 10).
-              </div>
-              
-              <div class="text-body-2 mb-4">
-                <strong>Год обучения:</strong> Учебный год, в котором проводится урок.
-              </div>
-              
-              <div class="text-body-2 mb-4">
-                <strong>Порядок:</strong> Порядковый номер урока в расписании.
-              </div>
-              
+            <v-card-text class="pa-4">
+              <v-list density="compact">
+                <v-list-item>
+                  <v-list-item-title class="text-body-2">
+                    Создано: {{ schedule?.created_at ? formatDate(schedule.created_at) : 'Н/Д' }}
+                  </v-list-item-title>
+                </v-list-item>
+                <v-list-item>
+                  <v-list-item-title class="text-body-2">
+                    Обновлено: {{ schedule?.updated_at ? formatDate(schedule.updated_at) : 'Н/Д' }}
+                  </v-list-item-title>
+                </v-list-item>
+              </v-list>
+            </v-card-text>
+          </v-card>
+
+          <v-card class="mt-4">
+            <v-card-title class="text-h6 pa-4">
+              <v-icon icon="mdi-information" class="mr-2"></v-icon>
+              Справка
+            </v-card-title>
+            <v-card-text class="pa-4">
               <div class="text-body-2">
-                <strong>Запланированная дата:</strong> Конкретная дата и время проведения урока (необязательно).
+                <p class="mb-2"><strong>Предмет:</strong> Выберите предмет из списка</p>
+                <p class="mb-2"><strong>Преподаватель:</strong> Назначенный преподаватель</p>
+                <p class="mb-2"><strong>Группа:</strong> Группа студентов</p>
+                <p class="mb-2"><strong>Семестр:</strong> 1 или 2 семестр</p>
+                <p class="mb-2"><strong>Кредиты:</strong> От 1 до 10 кредитов</p>
               </div>
             </v-card-text>
           </v-card>
         </v-col>
       </v-row>
+
+      <!-- Заглушка когда данные не загружены -->
+      <v-row v-else>
+        <v-col cols="12">
+          <v-card>
+            <v-card-text class="text-center pa-6">
+              <v-progress-circular
+                indeterminate
+                color="primary"
+                size="64"
+                class="mb-4"
+              />
+              <h3>Загрузка данных расписания...</h3>
+              <p class="text-medium-emphasis mt-2">
+                Если загрузка занимает слишком много времени, проверьте консоль браузера для отладочной информации.
+              </p>
+              <v-btn @click="goBack" class="mt-4">
+                Вернуться к списку
+              </v-btn>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
     </v-container>
-  </AdminApp>
+  </Layout>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 import { useForm } from '@inertiajs/vue3'
-import AdminApp from '../AdminApp.vue'
+import { router } from '@inertiajs/vue3'
+import Layout from '../../Layout.vue'
 
-// Props из Inertia
+// Props
 const props = defineProps({
   schedule: {
     type: Object,
-    required: true
+    default: () => ({})
   },
-  lessons: {
+  subjects: {
     type: Array,
     default: () => []
   },
@@ -263,61 +344,94 @@ const props = defineProps({
   teachers: {
     type: Array,
     default: () => []
+  },
+  syllabuses: {
+    type: Array,
+    default: () => []
+  },
+  lessons: {
+    type: Array,
+    default: () => []
+  },
+  errors: {
+    type: Object,
+    default: () => ({})
   }
 })
 
-// Данные
-const schedule = ref(props.schedule)
-const lessons = ref(props.lessons)
-const groups = ref(props.groups)
-const teachers = ref(props.teachers)
-
-const semesterOptions = ref([
-  { value: 1, text: '1 семестр' },
-  { value: 2, text: '2 семестр' }
-])
-
-// Форма
-const form = useForm({
-  lesson_id: schedule.value.lesson_id,
-  teacher_id: schedule.value.teacher_id,
-  group_id: schedule.value.group_id,
-  semester: schedule.value.semester,
-  credits: schedule.value.credits,
-  study_year: schedule.value.study_year,
-  order: schedule.value.order,
-  scheduled_at: schedule.value.scheduled_at,
-  is_active: schedule.value.is_active
-})
-
-// Методы
-const navigateTo = (route) => {
-  window.location.href = route
+// Функция для форматирования даты для input datetime-local
+const formatDateTimeForInput = (dateString) => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  return date.toISOString().slice(0, 16) // Format: YYYY-MM-DDTHH:mm
 }
 
-const submitForm = () => {
-  form.put(`/admin/schedules/${schedule.value.id}`, {
-    onSuccess: () => {
-      console.log('Расписание успешно обновлено')
+// Form data
+const form = useForm({
+  subject_id: props.schedule?.subject_id || null,
+  teacher_id: props.schedule?.teacher_id || null,
+  group_id: props.schedule?.group_id || null,
+  semester: props.schedule?.semester || null,
+  credits: props.schedule?.credits || 3,
+  study_year: props.schedule?.study_year || new Date().getFullYear(),
+  order: props.schedule?.order || 1,
+  scheduled_at: props.schedule?.scheduled_at ? formatDateTimeForInput(props.schedule.scheduled_at) : '',
+  is_active: props.schedule?.is_active ?? true,
+  syllabus_ids: props.schedule?.syllabuses?.map(s => s.id) || [],
+  lesson_ids: props.schedule?.lessons?.map(l => l.id) || []
+})
+
+const processing = ref(false)
+
+// Варианты семестров
+const semesterItems = [
+  { title: '1 семестр', value: 1 },
+  { title: '2 семестр', value: 2 }
+]
+
+// Methods
+const submit = () => {
+  if (!props.schedule?.id) {
+    console.error('Cannot submit - schedule ID not available')
+    return
+  }
+  
+  processing.value = true
+  
+  form.patch(`/admin/schedules/${props.schedule.id}`, {
+    onSuccess: (page) => {
+      processing.value = false
+      // Программный редирект на список расписаний
+      router.visit('/admin/schedules', { 
+        method: 'get',
+        data: {},
+        preserveState: false,
+        preserveScroll: false
+      })
     },
     onError: (errors) => {
-      console.error('Ошибки валидации:', errors)
+      console.error('Update failed:', errors)
+      processing.value = false
+    },
+    onFinish: () => {
+      processing.value = false
     }
   })
 }
 
-const resetForm = () => {
-  form.reset()
-  form.lesson_id = schedule.value.lesson_id
-  form.teacher_id = schedule.value.teacher_id
-  form.group_id = schedule.value.group_id
-  form.semester = schedule.value.semester
-  form.credits = schedule.value.credits
-  form.study_year = schedule.value.study_year
-  form.order = schedule.value.order
-  form.scheduled_at = schedule.value.scheduled_at
-  form.is_active = schedule.value.is_active
+const goBack = () => {
+  router.visit('/admin/schedules')
 }
+
+const formatDate = (date) => {
+  if (!date) return 'Н/Д'
+  return new Date(date).toLocaleDateString('ru-RU', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+}
+
 </script>
 
 <style scoped>

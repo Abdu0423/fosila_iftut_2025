@@ -10,9 +10,11 @@ class Subject extends Model
     use HasFactory;
 
     protected $fillable = [
+        'department_id',
         'name',
-        'description',
         'code',
+        'content',
+        'description',
         'credits',
         'is_active'
     ];
@@ -30,5 +32,10 @@ class Subject extends Model
     public function schedules()
     {
         return $this->hasMany(Schedule::class);
+    }
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
     }
 }

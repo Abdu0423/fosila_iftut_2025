@@ -9,13 +9,13 @@
       width="280"
     >
       <v-list-item>
-        <v-list-item-content>
-          <v-list-item-title class="text-h6">
-            <v-icon class="mr-2">{{ headerIcon }}</v-icon>
-            {{ headerTitle }}
-          </v-list-item-title>
-          <v-list-item-subtitle>{{ headerSubtitle }}</v-list-item-subtitle>
-        </v-list-item-content>
+        <template v-slot:prepend>
+          <v-icon class="mr-2">{{ headerIcon }}</v-icon>
+        </template>
+        <v-list-item-title class="text-h6">
+          {{ headerTitle }}
+        </v-list-item-title>
+        <v-list-item-subtitle>{{ headerSubtitle }}</v-list-item-subtitle>
       </v-list-item>
 
       <v-divider></v-divider>
@@ -63,25 +63,25 @@
         
         <v-list>
           <v-list-item @click="goToProfile">
-            <v-list-item-icon>
+            <template v-slot:prepend>
               <v-icon>mdi-account</v-icon>
-            </v-list-item-icon>
+            </template>
             <v-list-item-title>Профиль</v-list-item-title>
           </v-list-item>
           
           <v-list-item @click="goToSettings">
-            <v-list-item-icon>
+            <template v-slot:prepend>
               <v-icon>mdi-cog</v-icon>
-            </v-list-item-icon>
+            </template>
             <v-list-item-title>Настройки</v-list-item-title>
           </v-list-item>
           
           <v-divider></v-divider>
           
           <v-list-item @click="logout">
-            <v-list-item-icon>
+            <template v-slot:prepend>
               <v-icon>mdi-logout</v-icon>
-            </v-list-item-icon>
+            </template>
             <v-list-item-title>Выйти</v-list-item-title>
           </v-list-item>
         </v-list>
@@ -190,6 +190,7 @@ const menuItems = computed(() => {
         { title: 'Главная', icon: 'mdi-view-dashboard', route: '/admin' },
         { title: 'Пользователи', icon: 'mdi-account-group', route: '/admin/users' },
         //{ title: 'Курсы', icon: 'mdi-book-open-variant', route: '/admin/courses' },
+        { title: 'Предметы', icon: 'mdi-book-education', route: '/admin/subjects' },
         { title: 'Силлабусы', icon: 'mdi-file-document-multiple', route: '/admin/syllabuses' },
         { title: 'Уроки', icon: 'mdi-teach', route: '/admin/lessons' },
         { title: 'Тесты', icon: 'mdi-help-circle', route: '/admin/tests' },

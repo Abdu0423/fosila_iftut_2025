@@ -12,7 +12,7 @@
             <v-btn
               color="secondary"
               variant="outlined"
-              @click="navigateTo('/admin/syllabuses')"
+              @click="router.visit('/admin/syllabuses')"
               prepend-icon="mdi-arrow-left"
             >
               Назад к списку
@@ -59,18 +59,18 @@
                   </v-col>
                 </v-row>
 
-                <!-- Урок и год -->
+                <!-- Предмет и год -->
                 <v-row>
                   <v-col cols="12" md="6">
                     <v-select
-                      v-model="form.lesson_id"
-                      :items="lessons"
+                      v-model="form.subject_id"
+                      :items="subjects"
                       item-title="display_name"
                       item-value="id"
-                      label="Урок"
+                      label="Предмет"
                       variant="outlined"
                       density="compact"
-                      :error-messages="form.errors.lesson_id"
+                      :error-messages="form.errors.subject_id"
                       required
                     ></v-select>
                   </v-col>
@@ -136,7 +136,7 @@
                               <strong>Описание:</strong> {{ form.description || 'Не указано' }}
                             </div>
                             <div class="text-body-2 mt-2">
-                              <strong>Урок:</strong> {{ selectedLessonName }}
+                              <strong>Предмет:</strong> {{ selectedSubjectName }}
                             </div>
                             <div class="text-body-2 mt-2">
                               <strong>Год создания:</strong> {{ form.creation_year }}
@@ -179,7 +179,7 @@
                   <v-btn
                     color="secondary"
                     variant="outlined"
-                    @click="navigateTo('/admin/syllabuses')"
+                    @click="router.visit('/admin/syllabuses')"
                   >
                     Отмена
                   </v-btn>
@@ -208,7 +208,7 @@ import Layout from '../../Layout.vue'
 
 // Props из Inertia
 const props = defineProps({
-  lessons: {
+  subjects: {
     type: Array,
     default: () => []
   },
@@ -222,7 +222,7 @@ const props = defineProps({
 const form = useForm({
   name: '',
   description: '',
-  lesson_id: '',
+  subject_id: '',
   creation_year: new Date().getFullYear(),
   file: null
 })
@@ -240,15 +240,12 @@ const fileRules = [
 ]
 
 // Вычисляемые свойства
-const selectedLessonName = computed(() => {
-  const lesson = props.lessons.find(l => l.id == form.lesson_id)
-  return lesson ? lesson.display_name : 'Не выбран'
+const selectedSubjectName = computed(() => {
+  const subject = props.subjects.find(s => s.id == form.subject_id)
+  return subject ? subject.display_name : 'Не выбран'
 })
 
 // Методы
-const navigateTo = (route) => {
-  router.visit(route)
-}
 
 const handleFileChange = (file) => {
   if (file) {
@@ -275,14 +272,14 @@ const submitForm = () => {
   console.log('Отправка формы...')
   console.log('Form data:', form.data())
   console.log('Preview data:', previewData.value)
-  console.log('Route:', route('admin.syllabuses.store'))
+  console.log('Route:', '/admin/syllabuses')
   
   if (!previewData.value) {
     alert('Пожалуйста, загрузите файл для предварительного просмотра')
     return
   }
 
-  form.post(route('admin.syllabuses.store'), {
+  form.post('/admin/syllabuses', {
     onSuccess: (page) => {
       console.log('Силлабус успешно создан', page)
       console.log('Перенаправление...')

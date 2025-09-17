@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('schedules', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('lesson_id')->constrained()->onDelete('cascade'); // Ссылка на урок
+            $table->foreignId('subject_id')->constrained()->onDelete('cascade'); // Ссылка на предмет
             $table->foreignId('teacher_id')->constrained('users')->onDelete('cascade'); // ID учителя
             $table->foreignId('group_id')->constrained()->onDelete('cascade'); // ID группы
             $table->integer('semester'); // Семестр (1 или 2)

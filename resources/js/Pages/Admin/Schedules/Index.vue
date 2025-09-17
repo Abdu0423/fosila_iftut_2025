@@ -1,5 +1,5 @@
 <template>
-  <AdminApp>
+  <Layout role="admin">
     <v-container fluid>
       <!-- Заголовок -->
       <v-row>
@@ -9,839 +9,479 @@
               <h1 class="text-h4 font-weight-bold mb-2">Управление расписанием</h1>
               <p class="text-body-1 text-medium-emphasis">Создание и управление расписанием занятий</p>
             </div>
-            <v-btn
-              color="primary"
-              size="large"
-              prepend-icon="mdi-plus"
-              @click="navigateTo('/admin/schedules/create')"
-            >
-              Создать расписание
-            </v-btn>
+            <div class="d-flex gap-2">
+              <v-btn
+                v-if="selected.length > 0"
+                color="warning"
+                variant="outlined"
+                prepend-icon="mdi-cog"
+                @click="showBulkDialog = true"
+              >
+                Действия ({{ selected.length }})
+              </v-btn>
+              <v-btn
+                color="info"
+                variant="outlined"
+                prepend-icon="mdi-download"
+                @click="exportSchedules"
+              >
+                Экспорт
+              </v-btn>
+              <v-btn
+                color="primary"
+                size="large"
+                prepend-icon="mdi-plus"
+                @click="navigateTo('/admin/schedules/create')"
+              >
+                Добавить расписание
+              </v-btn>
+            </div>
           </div>
         </v-col>
       </v-row>
 
       <!-- Фильтры и поиск -->
-      <v-row>
-        <v-col cols="12">
-          <v-card class="mb-6">
-            <v-card-text>
-              <v-row>
-                <v-col cols="12" md="3">
-                  <v-text-field
-                    v-model="search"
-                    label="Поиск по уроку"
-                    prepend-inner-icon="mdi-magnify"
-                    variant="outlined"
-                    density="compact"
-                    clearable
-                  ></v-text-field>
-                </v-col>
-                <v-col cols="12" md="2">
-                  <v-select
-                    v-model="selectedLesson"
-                    :items="lessons"
-                    item-title="name"
-                    item-value="id"
-                    label="Урок"
-                    variant="outlined"
-                    density="compact"
-                    clearable
-                  ></v-select>
-                </v-col>
-                <v-col cols="12" md="2">
-                  <v-select
-                    v-model="selectedTeacher"
-                    :items="teachers"
-                    item-title="name"
-                    item-value="id"
-                    label="Преподаватель"
-                    variant="outlined"
-                    density="compact"
-                    clearable
-                  ></v-select>
-                </v-col>
-                <v-col cols="12" md="2">
-                  <v-select
-                    v-model="selectedGroup"
-                    :items="groups"
-                    item-title="name"
-                    item-value="id"
-                    label="Группа"
-                    variant="outlined"
-                    density="compact"
-                    clearable
-                  ></v-select>
-                </v-col>
-                <v-col cols="12" md="2">
-                  <v-select
-                    v-model="selectedSemester"
-                    :items="semesters"
-                    item-title="text"
-                    item-value="value"
-                    label="Семестр"
-                    variant="outlined"
-                    density="compact"
-                    clearable
-                  ></v-select>
-                </v-col>
-                <v-col cols="12" md="1">
-                  <v-btn
-                    color="primary"
-                    variant="outlined"
-                    block
-                    @click="applyFilters"
-                  >
-                    Применить
-                  </v-btn>
-                </v-col>
-              </v-row>
-            </v-card-text>
-          </v-card>
+      <v-row class="mb-4">
+        <v-col cols="12" md="3">
+          <v-text-field
+            v-model="search"
+            prepend-inner-icon="mdi-magnify"
+            label="Поиск по предмету, учителю или группе..."
+            variant="outlined"
+            density="compact"
+            clearable
+          />
+        </v-col>
+        <v-col cols="12" md="2">
+          <v-select
+            v-model="subjectFilter"
+            :items="subjectItems"
+            item-title="name"
+            item-value="id"
+            label="Предмет"
+            variant="outlined"
+            density="compact"
+            clearable
+          />
+        </v-col>
+        <v-col cols="12" md="2">
+          <v-select
+            v-model="groupFilter"
+            :items="groupItems"
+            item-title="name"
+            item-value="id"
+            label="Группа"
+            variant="outlined"
+            density="compact"
+            clearable
+          />
+        </v-col>
+        <v-col cols="12" md="2">
+          <v-select
+            v-model="semesterFilter"
+            :items="semesterItems"
+            label="Семестр"
+            variant="outlined"
+            density="compact"
+            clearable
+          />
+        </v-col>
+        <v-col cols="12" md="2">
+          <v-select
+            v-model="statusFilter"
+            :items="statusItems"
+            label="Статус"
+            variant="outlined"
+            density="compact"
+            clearable
+          />
         </v-col>
       </v-row>
 
-      <!-- Таблица расписания -->
-      <v-row>
-        <v-col cols="12">
-          <v-card>
-            <v-data-table
-              :headers="headers"
-              :items="filteredSchedules"
-              :search="search"
-              :loading="loading"
-              class="elevation-1"
+      <!-- Таблица расписаний -->
+      <v-card>
+        <v-data-table
+          :headers="headers"
+          :items="props.schedules.data"
+          :loading="loading"
+          item-value="id"
+          v-model="selected"
+          show-select
+          class="elevation-1"
+        >
+          <template v-slot:item.subject="{ item }">
+            <div class="font-weight-medium">
+              {{ item.subject?.name || 'Не указан' }}
+              <div class="text-caption text-medium-emphasis">
+                {{ item.subject?.code || '' }}
+              </div>
+            </div>
+          </template>
+
+          <template v-slot:item.teacher="{ item }">
+            <div class="font-weight-medium">
+              {{ item.teacher?.name || 'Не указан' }}
+              <div class="text-caption text-medium-emphasis">
+                {{ item.teacher?.email || '' }}
+              </div>
+            </div>
+          </template>
+
+          <template v-slot:item.group="{ item }">
+            <v-chip
+              size="small"
+              color="primary"
+              variant="tonal"
             >
-              <!-- Урок -->
-              <template v-slot:item.lesson_name="{ item }">
-                <div class="font-weight-medium">{{ item.lesson_name }}</div>
-              </template>
+              {{ item.group?.name || 'Не указана' }}
+            </v-chip>
+          </template>
 
-              <!-- Преподаватель -->
-              <template v-slot:item.teacher_name="{ item }">
-                <div>{{ item.teacher_name }}</div>
-              </template>
+          <template v-slot:item.semester="{ item }">
+            <v-chip
+              size="small"
+              :color="item.semester === 1 ? 'success' : 'info'"
+              variant="tonal"
+            >
+              {{ item.semester }} семестр
+            </v-chip>
+          </template>
 
-              <!-- Группа -->
-              <template v-slot:item.group_name="{ item }">
-                <div>{{ item.group_name }}</div>
-              </template>
+          <template v-slot:item.scheduled_at="{ item }">
+            <div v-if="item.scheduled_at">
+              <div class="font-weight-medium">
+                {{ formatDate(item.scheduled_at) }}
+              </div>
+              <div class="text-caption text-medium-emphasis">
+                {{ formatTime(item.scheduled_at) }}
+              </div>
+            </div>
+            <span v-else class="text-medium-emphasis">Не назначено</span>
+          </template>
 
-              <!-- Семестр -->
-              <template v-slot:item.semester="{ item }">
-                <v-chip
-                  :color="item.semester === 1 ? 'primary' : 'secondary'"
-                  size="small"
-                  variant="tonal"
-                >
-                  {{ item.semester }} семестр
-                </v-chip>
-              </template>
+          <template v-slot:item.is_active="{ item }">
+            <v-switch
+              :model-value="item.is_active"
+              @change="toggleStatus(item)"
+              color="success"
+              hide-details
+              density="compact"
+            />
+          </template>
 
-              <!-- Кредиты -->
-              <template v-slot:item.credits="{ item }">
-                <v-chip
-                  color="info"
-                  size="small"
-                  variant="tonal"
-                >
-                  {{ item.credits }} кредитов
-                </v-chip>
-              </template>
+          <template v-slot:item.actions="{ item }">
+            <div class="d-flex gap-1">
+              <v-btn
+                icon="mdi-eye"
+                size="small"
+                variant="text"
+                color="info"
+                @click="navigateTo(`/admin/schedules/${item.id}`)"
+              />
+              <v-btn
+                icon="mdi-pencil"
+                size="small"
+                variant="text"
+                color="primary"
+                @click="navigateTo(`/admin/schedules/${item.id}/edit`)"
+              />
+              <v-btn
+                icon="mdi-content-copy"
+                size="small"
+                variant="text"
+                color="success"
+                @click="duplicateSchedule(item)"
+              />
+              <v-btn
+                icon="mdi-delete"
+                size="small"
+                variant="text"
+                color="error"
+                @click="confirmDelete(item)"
+              />
+            </div>
+          </template>
+        </v-data-table>
 
-              <!-- Год обучения -->
-              <template v-slot:item.study_year="{ item }">
-                <div>{{ item.study_year }}-{{ item.study_year + 1 }}</div>
-              </template>
-
-              <!-- Порядок -->
-              <template v-slot:item.order="{ item }">
-                <v-chip
-                  color="warning"
-                  size="small"
-                  variant="tonal"
-                >
-                  {{ item.order }}
-                </v-chip>
-              </template>
-
-              <!-- Запланированная дата -->
-              <template v-slot:item.scheduled_at="{ item }">
-                <div v-if="item.scheduled_at !== 'Не указано'">
-                  <div class="font-weight-medium">{{ item.scheduled_at }}</div>
-                </div>
-                <div v-else class="text-medium-emphasis">
-                  {{ item.scheduled_at }}
-                </div>
-              </template>
-
-              <!-- Статус -->
-              <template v-slot:item.is_active="{ item }">
-                <v-chip
-                  :color="item.is_active ? 'success' : 'grey'"
-                  size="small"
-                  variant="tonal"
-                >
-                  {{ item.is_active ? 'Активно' : 'Неактивно' }}
-                </v-chip>
-              </template>
-
-              <!-- Дата создания -->
-              <template v-slot:item.created_at="{ item }">
-                {{ item.created_at }}
-              </template>
-
-              <!-- Действия -->
-              <template v-slot:item.actions="{ item }">
-                <v-menu>
-                  <template v-slot:activator="{ props }">
-                    <v-btn
-                      icon="mdi-dots-vertical"
-                      variant="text"
-                      size="small"
-                      v-bind="props"
-                    ></v-btn>
-                  </template>
-                  <v-list>
-                    <v-list-item
-                      @click="viewSchedule(item)"
-                      prepend-icon="mdi-eye"
-                    >
-                      <v-list-item-title>Просмотр</v-list-item-title>
-                    </v-list-item>
-                    <v-list-item
-                      @click="editSchedule(item)"
-                      prepend-icon="mdi-pencil"
-                    >
-                      <v-list-item-title>Редактировать</v-list-item-title>
-                    </v-list-item>
-                    <v-divider></v-divider>
-                    <v-list-item
-                      @click="toggleStatus(item)"
-                      prepend-icon="mdi-toggle-switch"
-                    >
-                      <v-list-item-title>{{ item.is_active ? 'Деактивировать' : 'Активировать' }}</v-list-item-title>
-                    </v-list-item>
-                    <v-list-item
-                      @click="deleteSchedule(item)"
-                      prepend-icon="mdi-delete"
-                      color="error"
-                    >
-                      <v-list-item-title>Удалить</v-list-item-title>
-                    </v-list-item>
-                  </v-list>
-                </v-menu>
-              </template>
-            </v-data-table>
-          </v-card>
-        </v-col>
-      </v-row>
-
-      <!-- Статистика -->
-      <v-row class="mt-6">
-        <v-col cols="12" md="3">
-          <v-card>
-            <v-card-text class="text-center">
-              <v-icon size="48" color="primary" class="mb-4">mdi-calendar-clock</v-icon>
-              <div class="text-h4 font-weight-bold">{{ schedules.length }}</div>
-              <div class="text-body-2 text-medium-emphasis">Всего записей</div>
-            </v-card-text>
-          </v-card>
-        </v-col>
-        <v-col cols="12" md="3">
-          <v-card>
-            <v-card-text class="text-center">
-              <v-icon size="48" color="success" class="mb-4">mdi-check-circle</v-icon>
-              <div class="text-h4 font-weight-bold">{{ activeSchedules }}</div>
-              <div class="text-body-2 text-medium-emphasis">Активных</div>
-            </v-card-text>
-          </v-card>
-        </v-col>
-        <v-col cols="12" md="3">
-          <v-card>
-            <v-card-text class="text-center">
-              <v-icon size="48" color="info" class="mb-4">mdi-teach</v-icon>
-              <div class="text-h4 font-weight-bold">{{ uniqueTeachers }}</div>
-              <div class="text-body-2 text-medium-emphasis">Преподавателей</div>
-            </v-card-text>
-          </v-card>
-        </v-col>
-        <v-col cols="12" md="3">
-          <v-card>
-            <v-card-text class="text-center">
-              <v-icon size="48" color="warning" class="mb-4">mdi-account-group</v-icon>
-              <div class="text-h4 font-weight-bold">{{ uniqueGroups }}</div>
-              <div class="text-body-2 text-medium-emphasis">Групп</div>
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
-
-      <!-- Быстрые действия -->
-      <v-row class="mt-6">
-        <v-col cols="12">
-          <v-card>
-            <v-card-title class="text-h6">
-              <v-icon start>mdi-lightning-bolt</v-icon>
-              Быстрые действия
-            </v-card-title>
-            <v-card-text>
-              <v-row>
-                <v-col cols="12" md="3">
-                  <v-btn
-                    variant="outlined"
-                    block
-                    prepend-icon="mdi-import"
-                    @click="importSchedule"
-                  >
-                    Импорт расписания
-                  </v-btn>
-                </v-col>
-                <v-col cols="12" md="3">
-                  <v-btn
-                    variant="outlined"
-                    block
-                    prepend-icon="mdi-file-download"
-                    @click="exportSchedulePost"
-                  >
-                  Экспорт расписания
-                  </v-btn>
-                </v-col>
-                <v-col cols="12" md="3">
-                  <v-btn
-                    variant="outlined"
-                    block
-                    prepend-icon="mdi-calendar-plus"
-                    @click="bulkCreate"
-                  >
-                    Массовое создание
-                  </v-btn>
-                </v-col>
-                <v-col cols="12" md="3">
-                  <v-btn
-                    variant="outlined"
-                    block
-                    prepend-icon="mdi-chart-line"
-                    @click="analytics"
-                  >
-                    Аналитика
-                  </v-btn>
-                </v-col>
-              </v-row>
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
+        <!-- Пагинация -->
+        <div class="d-flex justify-center pa-4" v-if="props.schedules.last_page > 1">
+          <v-pagination
+            :model-value="props.schedules.current_page"
+            :length="props.schedules.last_page"
+            @update:model-value="changePage"
+          />
+        </div>
+      </v-card>
     </v-container>
-  </AdminApp>
+
+    <!-- Диалог массовых действий -->
+    <v-dialog v-model="showBulkDialog" max-width="500px">
+      <v-card>
+        <v-card-title>Массовые действия</v-card-title>
+        <v-card-text>
+          <v-select
+            v-model="bulkAction"
+            :items="bulkActions"
+            label="Выберите действие"
+            variant="outlined"
+            density="compact"
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn @click="showBulkDialog = false">Отмена</v-btn>
+          <v-btn 
+            @click="executeBulkAction" 
+            color="primary"
+            :disabled="!bulkAction"
+          >
+            Выполнить
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Диалог подтверждения удаления -->
+    <v-dialog v-model="deleteDialog" max-width="500px">
+      <v-card>
+        <v-card-title>Подтверждение удаления</v-card-title>
+        <v-card-text>
+          Вы уверены, что хотите удалить расписание "{{ selectedSchedule?.subject?.name }}"?
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn @click="deleteDialog = false">Отмена</v-btn>
+          <v-btn @click="deleteSchedule" color="error">Удалить</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </Layout>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
-import AdminApp from '../AdminApp.vue'
+import Layout from '../../Layout.vue'
 
-// Props из Inertia
+// Props
 const props = defineProps({
-  schedules: {
-    type: Array,
-    default: () => []
-  },
-  lessons: {
-    type: Array,
-    default: () => []
-  },
-  groups: {
-    type: Array,
-    default: () => []
-  },
-  teachers: {
-    type: Array,
-    default: () => []
-  }
+  schedules: Object,
+  subjects: Array,
+  groups: Array,
+  teachers: Array,
+  filters: Object
 })
 
-// Состояние
+// Reactive data (инициализированные из server-side)
+const search = ref(props.filters?.search || '')
+const subjectFilter = ref(props.filters?.subject_id || null)
+const groupFilter = ref(props.filters?.group_id || null)
+const semesterFilter = ref(props.filters?.semester || null)
+const statusFilter = ref(props.filters?.is_active !== '' ? props.filters?.is_active : null)
 const loading = ref(false)
-const search = ref('')
-const selectedLesson = ref(null)
-const selectedTeacher = ref(null)
-const selectedGroup = ref(null)
-const selectedSemester = ref(null)
+const deleteDialog = ref(false)
+const selectedSchedule = ref(null)
+const selected = ref([])
+const showBulkDialog = ref(false)
+const bulkAction = ref(null)
 
-// Данные
-const schedules = ref(props.schedules)
-const lessons = ref(props.lessons)
-const groups = ref(props.groups)
-const teachers = ref(props.teachers)
+// Заголовки таблицы
+const headers = [
+  { title: 'ID', key: 'id', width: '80px' },
+  { title: 'Предмет', key: 'subject' },
+  { title: 'Преподаватель', key: 'teacher' },
+  { title: 'Группа', key: 'group', width: '120px' },
+  { title: 'Семестр', key: 'semester', width: '120px' },
+  { title: 'Кредиты', key: 'credits', width: '100px' },
+  { title: 'Год обучения', key: 'study_year', width: '120px' },
+  { title: 'Дата/Время', key: 'scheduled_at', width: '150px' },
+  { title: 'Статус', key: 'is_active', width: '100px' },
+  { title: 'Действия', key: 'actions', width: '150px', sortable: false }
+]
 
-const semesters = ref([
-  { value: 1, text: '1 семестр' },
-  { value: 2, text: '2 семестр' },
-  { value: 3, text: '3 семестр' },
-  { value: 4, text: '4 семестр' },
-  { value: 5, text: '5 семестр' },
-  { value: 6, text: '6 семестр' },
-  { value: 7, text: '7 семестр' },
-  { value: 8, text: '8 семестр' },
-])
+// Варианты для фильтров
+const semesterItems = [
+  { title: '1 семестр', value: 1 },
+  { title: '2 семестр', value: 2 }
+]
 
-const headers = ref([
-  { title: 'Урок', key: 'lesson_name', sortable: true },
-  { title: 'Преподаватель', key: 'teacher_name', sortable: true },
-  { title: 'Группа', key: 'group_name', sortable: true },
-  { title: 'Семестр', key: 'semester', sortable: true },
-  { title: 'Кредиты', key: 'credits', sortable: true },
-  { title: 'Год обучения', key: 'study_year', sortable: true },
-  { title: 'Порядок', key: 'order', sortable: true },
-  { title: 'Запланировано', key: 'scheduled_at', sortable: true },
-  { title: 'Статус', key: 'is_active', sortable: true },
-  { title: 'Дата создания', key: 'created_at', sortable: true },
-  { title: 'Действия', key: 'actions', sortable: false }
-])
+const statusItems = [
+  { title: 'Активные', value: true },
+  { title: 'Неактивные', value: false }
+]
 
-// Вычисляемые свойства
-const filteredSchedules = computed(() => {
-  let filtered = schedules.value
+// Массовые действия
+const bulkActions = [
+  { title: 'Активировать', value: 'activate' },
+  { title: 'Деактивировать', value: 'deactivate' },
+  { title: 'Удалить', value: 'delete' }
+]
 
-  if (selectedLesson.value) {
-    filtered = filtered.filter(s => {
-      const lesson = lessons.value.find(l => l.id === selectedLesson.value)
-      return lesson && s.lesson_name === lesson.name
-    })
-  }
-
-  if (selectedTeacher.value) {
-    filtered = filtered.filter(s => {
-      const teacher = teachers.value.find(t => t.id === selectedTeacher.value)
-      return teacher && s.teacher_name === teacher.name
-    })
-  }
-
-  if (selectedGroup.value) {
-    filtered = filtered.filter(s => {
-      const group = groups.value.find(g => g.id === selectedGroup.value)
-      return group && s.group_name === group.name
-    })
-  }
-
-  if (selectedSemester.value) {
-    filtered = filtered.filter(s => s.semester === selectedSemester.value)
-  }
-
-  return filtered
+// Computed
+const subjectItems = computed(() => {
+  return props.subjects || []
 })
 
-const activeSchedules = computed(() => 
-  schedules.value.filter(s => s.is_active).length
-)
-
-const uniqueTeachers = computed(() => {
-  const teacherNames = [...new Set(schedules.value.map(s => s.teacher_name))]
-  return teacherNames.filter(name => name !== 'Не указан').length
+const groupItems = computed(() => {
+  return props.groups || []
 })
 
-const uniqueGroups = computed(() => {
-  const groupNames = [...new Set(schedules.value.map(s => s.group_name))]
-  return groupNames.filter(name => name !== 'Не указана').length
+// Server-side фильтрация
+const applyFilters = () => {
+  const params = {}
+  
+  if (search.value) {
+    params.search = search.value
+  }
+  
+  if (subjectFilter.value) {
+    params.subject_id = subjectFilter.value
+  }
+  
+  if (groupFilter.value) {
+    params.group_id = groupFilter.value
+  }
+  
+  if (semesterFilter.value) {
+    params.semester = semesterFilter.value
+  }
+  
+  if (statusFilter.value !== null) {
+    params.is_active = statusFilter.value
+  }
+  
+  router.get('/admin/schedules', params, {
+    preserveState: true,
+    preserveScroll: true
+  })
+}
+
+// Debounced функция для поиска
+let searchTimeout = null
+const debouncedSearch = () => {
+  clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => {
+    applyFilters()
+  }, 500)
+}
+
+// Watch для автоматического применения фильтров
+watch(search, () => {
+  debouncedSearch()
 })
 
-// Методы
+watch([subjectFilter, groupFilter, semesterFilter, statusFilter], () => {
+  applyFilters()
+})
+
+// Methods
 const navigateTo = (route) => {
   router.visit(route)
 }
 
-const applyFilters = () => {
-  console.log('Применение фильтров:', { 
-    search: search.value, 
-    lesson: selectedLesson.value, 
-    teacher: selectedTeacher.value, 
-    group: selectedGroup.value,
-    semester: selectedSemester.value
+const changePage = (page) => {
+  const params = { ...props.filters, page }
+  router.get('/admin/schedules', params, {
+    preserveState: true,
+    preserveScroll: true
   })
 }
 
-const viewSchedule = (schedule) => {
-  navigateTo(`/admin/schedules/${schedule.id}`)
-}
-
-const editSchedule = (schedule) => {
-  navigateTo(`/admin/schedules/${schedule.id}/edit`)
-}
-
 const toggleStatus = (schedule) => {
-  console.log('Переключение статуса расписания:', schedule)
-  // Здесь будет логика переключения статуса
-}
-
-const deleteSchedule = (schedule) => {
-  console.log('Удаление расписания:', schedule)
-  // Здесь будет подтверждение удаления
-}
-
-const importSchedule = () => {
-  // Создаем скрытый input для выбора файла
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = '.csv,.xlsx,.xls'
-  input.onchange = async (event) => {
-    const file = event.target.files[0]
-    if (!file) return
-
-    // Показываем индикатор загрузки
-    loading.value = true
-
-    const formData = new FormData()
-    formData.append('file', file)
-
-    try {
-      const response = await fetch('/admin/schedules/import', {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        }
-      })
-
-      const result = await response.json()
-      
-      if (result.success) {
-        // Показываем уведомление об успехе
-        showSuccessNotification(`Импорт завершен! ${result.message}`)
-        // Перезагружаем страницу для обновления данных
-        setTimeout(() => {
-          window.location.reload()
-        }, 1500)
-      } else {
-        showErrorNotification('Ошибка при импорте: ' + result.message)
-      }
-    } catch (error) {
-      showErrorNotification('Ошибка при импорте: ' + error.message)
-    } finally {
-      loading.value = false
+  router.post(`/admin/schedules/${schedule.id}/toggle-status`, {}, {
+    preserveState: true,
+    onSuccess: () => {
+      // Status updated successfully
+    },
+    onError: (errors) => {
+      console.error('Ошибка при изменении статуса:', errors)
     }
-  }
-  input.click()
+  })
 }
 
-const exportSchedule = async () => {
-  try {
-    loading.value = true
-    console.log('Начинаем экспорт...')
+const duplicateSchedule = (schedule) => {
+  router.post(`/admin/schedules/${schedule.id}/duplicate`, {}, {
+    preserveState: true,
+    onSuccess: () => {
+      // Schedule duplicated successfully
+    },
+    onError: (errors) => {
+      console.error('Ошибка при дублировании расписания:', errors)
+    }
+  })
+}
+
+const confirmDelete = (schedule) => {
+  selectedSchedule.value = schedule
+  deleteDialog.value = true
+}
+
+const deleteSchedule = () => {
+  if (selectedSchedule.value) {
+    console.log('Attempting to delete schedule:', selectedSchedule.value)
+    console.log('Schedule ID:', selectedSchedule.value.id)
+    console.log('Delete URL:', `/admin/schedules/${selectedSchedule.value.id}`)
     
-    // Получаем CSRF токен
-    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-    console.log('CSRF токен:', token ? 'найден' : 'не найден')
+    if (!selectedSchedule.value.id) {
+      console.error('Schedule ID is missing!')
+      return
+    }
     
-    // Запрос с CSRF токеном и правильными заголовками
-    const response = await fetch('/admin/schedules/export', {
-      method: 'GET',
-      headers: {
-        'Accept': 'text/csv, application/json',
-        'X-CSRF-TOKEN': token,
-        'X-Requested-With': 'XMLHttpRequest'
+    router.delete(`/admin/schedules/${selectedSchedule.value.id}`, {
+      onSuccess: () => {
+        console.log('Schedule deleted successfully')
+        deleteDialog.value = false
+        selectedSchedule.value = null
       },
-      credentials: 'same-origin'
-    })
-    console.log('Ответ получен:', response.status, response.statusText)
-    
-    if (response.ok) {
-      console.log('Ответ успешный, создаем blob...')
-      const blob = await response.blob()
-      console.log('Blob создан:', blob.size, 'байт')
-      
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `schedules_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.csv`
-      
-      console.log('Скачиваем файл...')
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
-      
-      showSuccessNotification('Экспорт завершен! Файл скачивается...')
-    } else {
-      console.log('Ошибка ответа:', response.status, response.statusText)
-      
-      // Пытаемся получить текст ошибки
-      let errorMessage = response.statusText
-      try {
-        const errorText = await response.text()
-        console.log('Текст ошибки:', errorText)
-        if (errorText) {
-          errorMessage = errorText
-        }
-      } catch (e) {
-        console.log('Не удалось получить текст ошибки:', e)
-      }
-      
-      showErrorNotification('Ошибка при экспорте: ' + errorMessage)
-    }
-    
-  } catch (error) {
-    console.error('Ошибка в exportSchedule:', error)
-    showErrorNotification('Ошибка при экспорте: ' + error.message)
-  } finally {
-    loading.value = false
-  }
-}
-
-const bulkCreate = () => {
-  navigateTo('/admin/schedules/bulk-create')
-}
-
-const analytics = () => {
-  navigateTo('/admin/schedules/analytics')
-}
-
-const testExport = async () => {
-  try {
-    loading.value = true
-    
-    // Тестируем простой экспорт
-    const response = await fetch('/admin/test-export', {
-      method: 'GET'
-    })
-    
-    if (response.ok) {
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = 'test.txt'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
-      
-      showSuccessNotification('Тестовый экспорт успешен!')
-    } else {
-      showErrorNotification('Ошибка тестового экспорта: ' + response.statusText)
-    }
-    
-  } catch (error) {
-    showErrorNotification('Ошибка тестового экспорта: ' + error.message)
-  } finally {
-    loading.value = false
-  }
-}
-
-const testScheduleExport = async () => {
-  try {
-    loading.value = true
-    console.log('Тестируем данные расписания...')
-
-    const response = await fetch('/test-schedule-export', {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
+      onError: (errors) => {
+        console.error('Ошибка при удалении расписания:', errors)
       }
     })
-
-    const data = await response.json()
-    console.log('Ответ сервера:', data)
-
-    if (response.ok) {
-      showSuccessNotification(`Данные найдены: ${data.count} записей`)
-    } else {
-      showErrorNotification('Ошибка получения данных: ' + (data.error || response.statusText))
-    }
-
-  } catch (error) {
-    console.error('Ошибка тестирования данных:', error)
-    showErrorNotification('Ошибка тестирования данных: ' + error.message)
-  } finally {
-    loading.value = false
   }
 }
 
-const testExportSchedule = async () => {
-  try {
-    loading.value = true
-    console.log('Тестируем экспорт расписания без middleware...')
-
-    const response = await fetch('/test-export-schedule', {
-      method: 'GET',
-      headers: {
-        'Accept': 'text/csv, application/json',
-      }
-    })
-
-    if (response.ok) {
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `test_schedules_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.csv`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
-
-      showSuccessNotification('Тестовый экспорт расписания успешен!')
-    } else {
-      const errorData = await response.json().catch(() => ({ error: 'Неизвестная ошибка' }))
-      showErrorNotification('Ошибка тестового экспорта: ' + (errorData.error || response.statusText))
+const executeBulkAction = () => {
+  const ids = selected.value.map(item => item.id)
+  router.post('/admin/schedules/bulk-action', {
+    action: bulkAction.value,
+    ids: ids
+  }, {
+    preserveState: true,
+    onSuccess: () => {
+      showBulkDialog.value = false
+      bulkAction.value = null
+      selected.value = []
     }
-
-  } catch (error) {
-    console.error('Ошибка тестового экспорта:', error)
-    showErrorNotification('Ошибка тестового экспорта: ' + error.message)
-  } finally {
-    loading.value = false
-  }
+  })
 }
 
-const exportSchedulePost = async () => {
-  try {
-    loading.value = true
-    console.log('Начинаем экспорт через POST...')
-    
-    // Получаем CSRF токен
-    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-    console.log('CSRF токен:', token ? 'найден' : 'не найден')
-    
-    // Создаем FormData для POST запроса
-    const formData = new FormData()
-    
-    // POST запрос с CSRF токеном
-    const response = await fetch('/admin/schedules/export', {
-      method: 'POST',
-      headers: {
-        'X-CSRF-TOKEN': token,
-        'X-Requested-With': 'XMLHttpRequest'
-      },
-      body: formData
-    })
-    console.log('Ответ получен:', response.status, response.statusText)
-    
-    if (response.ok) {
-      console.log('Ответ успешный, создаем blob...')
-      const blob = await response.blob()
-      console.log('Blob создан:', blob.size, 'байт')
-      
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `schedules_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.csv`
-      
-      console.log('Скачиваем файл...')
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
-      
-      showSuccessNotification('Экспорт через POST завершен! Файл скачивается...')
-    } else {
-      console.log('Ошибка ответа:', response.status, response.statusText)
-      
-      // Пытаемся получить текст ошибки
-      let errorMessage = response.statusText
-      try {
-        const errorText = await response.text()
-        console.log('Текст ошибки:', errorText)
-        if (errorText) {
-          errorMessage = errorText
-        }
-      } catch (e) {
-        console.log('Не удалось получить текст ошибки:', e)
-      }
-      
-      showErrorNotification('Ошибка при экспорте через POST: ' + errorMessage)
-    }
-    
-  } catch (error) {
-    console.error('Ошибка в exportSchedulePost:', error)
-    showErrorNotification('Ошибка при экспорте через POST: ' + error.message)
-  } finally {
-    loading.value = false
-  }
+const exportSchedules = () => {
+  router.get('/admin/schedules/export', props.filters, {
+    preserveState: true
+  })
 }
 
-// Функции уведомлений
-const showSuccessNotification = (message) => {
-  // Создаем временное уведомление
-  const notification = document.createElement('div')
-  notification.className = 'success-notification'
-  notification.textContent = message
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: #4caf50;
-    color: white;
-    padding: 16px 24px;
-    border-radius: 8px;
-    z-index: 9999;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    animation: slideIn 0.3s ease;
-  `
-  
-  document.body.appendChild(notification)
-  
-  setTimeout(() => {
-    notification.style.animation = 'slideOut 0.3s ease'
-    setTimeout(() => {
-      document.body.removeChild(notification)
-    }, 300)
-  }, 3000)
+// Utility functions
+const formatDate = (dateString) => {
+  if (!dateString) return ''
+  return new Date(dateString).toLocaleDateString('ru-RU')
 }
 
-const showErrorNotification = (message) => {
-  // Создаем временное уведомление об ошибке
-  const notification = document.createElement('div')
-  notification.className = 'error-notification'
-  notification.textContent = message
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: #f44336;
-    color: white;
-    padding: 16px 24px;
-    border-radius: 8px;
-    z-index: 9999;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    animation: slideIn 0.3s ease;
-  `
-  
-  document.body.appendChild(notification)
-  
-  setTimeout(() => {
-    notification.style.animation = 'slideOut 0.3s ease'
-    setTimeout(() => {
-      document.body.removeChild(notification)
-    }, 300)
-  }, 4000)
+const formatTime = (dateString) => {
+  if (!dateString) return ''
+  return new Date(dateString).toLocaleTimeString('ru-RU', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 }
-
-onMounted(() => {
-  console.log('Страница управления расписанием загружена')
-  
-  // Добавляем CSS анимации для уведомлений
-  const style = document.createElement('style')
-  style.textContent = `
-    @keyframes slideIn {
-      from { transform: translateX(100%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
-    }
-    @keyframes slideOut {
-      from { transform: translateX(0); opacity: 1; }
-      to { transform: translateX(100%); opacity: 0; }
-    }
-  `
-  document.head.appendChild(style)
-})
 </script>
 
 <style scoped>
-.v-data-table {
-  border-radius: 8px;
+.v-card {
+  border-radius: 12px;
 }
 
-.v-card {
+.v-data-table {
   border-radius: 12px;
 }
 </style>

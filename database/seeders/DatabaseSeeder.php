@@ -21,6 +21,8 @@ class DatabaseSeeder extends Seeder
             GroupSeeder::class,
             LessonSeeder::class,
             ScheduleSeeder::class,
+            ScheduleSyllabusSeeder::class,
+            LessonScheduleSeeder::class,
         ]);
     }
 }

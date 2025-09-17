@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Syllabus;
-use App\Models\Lesson;
+use App\Models\Subject;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -18,7 +18,7 @@ class SyllabusController extends Controller
      */
     public function index()
     {
-        $syllabuses = Syllabus::with(['lesson', 'creator'])
+        $syllabuses = Syllabus::with(['subject', 'creator'])
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($syllabus) {
@@ -29,7 +29,7 @@ class SyllabusController extends Controller
                     'file_name' => $syllabus->file_name,
                     'file_type' => $syllabus->file_type,
                     'file_size_formatted' => $syllabus->file_size_formatted,
-                    'lesson_name' => $syllabus->lesson ? $syllabus->lesson->name : 'Не указан',
+                    'subject_name' => $syllabus->subject ? $syllabus->subject->name : 'Не указан',
                     'creator_name' => $syllabus->creator ? $syllabus->creator->name : 'Неизвестно',
                     'creation_year' => $syllabus->creation_year,
                     'created_at' => $syllabus->created_at ? $syllabus->created_at->format('d.m.Y H:i') : 'Не указано',
@@ -56,11 +56,11 @@ class SyllabusController extends Controller
      */
     public function create()
     {
-        $lessons = Lesson::orderBy('name')->get()->map(function ($lesson) {
+        $subjects = Subject::orderBy('name')->get()->map(function ($subject) {
             return [
-                'id' => $lesson->id,
-                'name' => $lesson->name,
-                'display_name' => $lesson->name
+                'id' => $subject->id,
+                'name' => $subject->name,
+                'display_name' => $subject->name
             ];
         });
 
@@ -71,7 +71,7 @@ class SyllabusController extends Controller
         }
 
         return Inertia::render('Admin/Syllabuses/Create', [
-            'lessons' => $lessons,
+            'subjects' => $subjects,
             'years' => $years
         ]);
     }
@@ -90,7 +90,7 @@ class SyllabusController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'lesson_id' => 'required|exists:lessons,id',
+            'subject_id' => 'required|exists:subjects,id',
             'creation_year' => 'required|integer|min:2000|max:' . (date('Y') + 1),
             'file' => 'required|file|mimes:pdf,doc,docx,ppt,pptx,txt,jpg,jpeg,png,gif,bmp,webp,md,html,css,js,json,xml,csv,log|max:10240' // Максимум 10MB
         ]);
@@ -111,7 +111,7 @@ class SyllabusController extends Controller
             $syllabus = Syllabus::create([
                 'name' => $request->name,
                 'description' => $request->description,
-                'lesson_id' => $request->lesson_id,
+                'subject_id' => $request->subject_id,
                 'creation_year' => $request->creation_year,
                 'created_by' => auth()->id(),
                 'file_path' => $filePath,
@@ -202,7 +202,7 @@ class SyllabusController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'lesson_id' => 'required|exists:lessons,id',
+            'subject_id' => 'required|exists:subjects,id',
             'creation_year' => 'required|integer|min:2000|max:' . (date('Y') + 1),
             'file' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,txt,md,html,css,js,json,xml,csv,log|max:10240'
         ]);
@@ -211,7 +211,7 @@ class SyllabusController extends Controller
             $data = [
                 'name' => $request->name,
                 'description' => $request->description,
-                'lesson_id' => $request->lesson_id,
+                'subject_id' => $request->subject_id,
                 'creation_year' => $request->creation_year,
             ];
 

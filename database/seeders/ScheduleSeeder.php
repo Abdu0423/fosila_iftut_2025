@@ -5,7 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Schedule;
-use App\Models\Lesson;
+use App\Models\Subject;
 use App\Models\Group;
 use App\Models\User;
 
@@ -16,8 +16,8 @@ class ScheduleSeeder extends Seeder
      */
     public function run(): void
     {
-        // Получаем уроки
-        $lessons = Lesson::all();
+        // Получаем предметы
+        $subjects = Subject::all();
         
         // Получаем группы
         $groups = Group::all();
@@ -36,13 +36,13 @@ class ScheduleSeeder extends Seeder
 
         $currentYear = date('Y');
         
-        foreach ($lessons as $lesson) {
-            // Для каждого урока создаем несколько записей в расписании
+        foreach ($subjects as $subject) {
+            // Для каждого предмета создаем несколько записей в расписании
             foreach ($groups as $group) {
-                // Проверяем, что группа и урок принадлежат одной кафедре
-                if ($group->department_id === $lesson->department_id) {
+                // Проверяем, что группа и предмет принадлежат одной кафедре (если есть связь)
+                if ($group->department_id === ($subject->department_id ?? $group->department_id)) {
                     Schedule::create([
-                        'lesson_id' => $lesson->id,
+                        'subject_id' => $subject->id,
                         'teacher_id' => $teachers->first()->id,
                         'group_id' => $group->id,
                         'semester' => rand(1, 2),

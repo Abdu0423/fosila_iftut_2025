@@ -17,3 +17,8 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+// API для получения предметов (используется в формах создания уроков/расписания)
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/subjects', [App\Http\Controllers\Admin\SubjectController::class, 'apiIndex'])->name('api.subjects.index');
+});

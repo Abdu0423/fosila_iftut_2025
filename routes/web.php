@@ -103,6 +103,13 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
         return Inertia::render('Admin/Dashboard');
     })->name('admin.dashboard');
     
+    // Управление предметами
+    Route::resource('subjects', App\Http\Controllers\Admin\SubjectController::class)->names('admin.subjects');
+    Route::post('/subjects/{subject}/toggle-status', [App\Http\Controllers\Admin\SubjectController::class, 'toggleStatus'])->name('admin.subjects.toggle-status');
+    Route::post('/subjects/bulk-action', [App\Http\Controllers\Admin\SubjectController::class, 'bulkAction'])->name('admin.subjects.bulk-action');
+    Route::post('/subjects/{subject}/duplicate', [App\Http\Controllers\Admin\SubjectController::class, 'duplicate'])->name('admin.subjects.duplicate');
+    Route::get('/subjects-export', [App\Http\Controllers\Admin\SubjectController::class, 'export'])->name('admin.subjects.export');
+    
     // Управление пользователями
     Route::get('/users', [App\Http\Controllers\Admin\UserController::class, 'index'])->name('admin.users.index');
     Route::get('/users/create', [App\Http\Controllers\Admin\UserController::class, 'create'])->name('admin.users.create');
@@ -230,25 +237,37 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
         return Inertia::render('Admin/Grades/Courses');
     })->name('admin.grades.courses');
     
-    // Управление расписанием
+    // Управление расписанием (специфичные роуты ПЕРЕД resource)
+    Route::get('/schedules/analytics', [App\Http\Controllers\Admin\ScheduleController::class, 'analytics'])->name('admin.schedules.analytics');
+    Route::get('/schedules/bulk-create', [App\Http\Controllers\Admin\ScheduleController::class, 'bulkCreate'])->name('admin.schedules.bulk-create');
+    Route::post('/schedules/bulk-store', [App\Http\Controllers\Admin\ScheduleController::class, 'bulkStore'])->name('admin.schedules.bulk-store');
+    Route::get('/schedules/export', [App\Http\Controllers\Admin\ScheduleController::class, 'export'])->name('admin.schedules.export');
+    Route::post('/schedules/export', [App\Http\Controllers\Admin\ScheduleController::class, 'export'])->name('admin.schedules.export.post');
+    Route::post('/schedules/import', [App\Http\Controllers\Admin\ScheduleController::class, 'import'])->name('admin.schedules.import');
+    Route::post('/schedules/bulk-action', [App\Http\Controllers\Admin\ScheduleController::class, 'bulkAction'])->name('admin.schedules.bulk-action');
+    Route::post('/schedules/{schedule}/toggle-status', [App\Http\Controllers\Admin\ScheduleController::class, 'toggleStatus'])->name('admin.schedules.toggle-status');
+    Route::post('/schedules/{schedule}/duplicate', [App\Http\Controllers\Admin\ScheduleController::class, 'duplicate'])->name('admin.schedules.duplicate');
+    
+    // Управление уроками в расписании
+    Route::get('/schedules/{schedule}/lessons', [App\Http\Controllers\Admin\ScheduleController::class, 'lessons'])->name('admin.schedules.lessons');
+    Route::post('/schedules/{schedule}/lessons', [App\Http\Controllers\Admin\ScheduleController::class, 'addLesson'])->name('admin.schedules.lessons.add');
+    Route::delete('/schedules/{schedule}/lessons/{lesson}', [App\Http\Controllers\Admin\ScheduleController::class, 'removeLesson'])->name('admin.schedules.lessons.remove');
+    Route::patch('/schedules/{schedule}/lessons/reorder', [App\Http\Controllers\Admin\ScheduleController::class, 'reorderLessons'])->name('admin.schedules.lessons.reorder');
+    
+    // Resource роут должен быть ПОСЛЕДНИМ
     Route::resource('schedules', App\Http\Controllers\Admin\ScheduleController::class)->names('admin.schedules');
+    
     Route::resource('tests', App\Http\Controllers\Admin\TestController::class)->names('admin.tests');
 Route::get('/tests/{test}/questions', [App\Http\Controllers\Admin\TestController::class, 'questions'])->name('admin.tests.questions');
 Route::post('/tests/{test}/questions', [App\Http\Controllers\Admin\TestController::class, 'storeQuestion'])->name('admin.tests.questions.store');
 Route::put('/tests/{test}/questions/{question}', [App\Http\Controllers\Admin\TestController::class, 'updateQuestion'])->name('admin.tests.questions.update');
 Route::delete('/tests/{test}/questions/{question}', [App\Http\Controllers\Admin\TestController::class, 'destroyQuestion'])->name('admin.tests.questions.destroy');
 Route::get('/tests/{test}/preview', [App\Http\Controllers\Admin\TestController::class, 'preview'])->name('admin.tests.preview');
-    Route::post('/schedules/import', [App\Http\Controllers\Admin\ScheduleController::class, 'import'])->name('admin.schedules.import');
-    Route::get('/schedules/export', [App\Http\Controllers\Admin\ScheduleController::class, 'export'])->name('admin.schedules.export');
-    Route::post('/schedules/export', [App\Http\Controllers\Admin\ScheduleController::class, 'export'])->name('admin.schedules.export.post');
     Route::get('/test-export', function() {
         return response('test')
             ->header('Content-Type', 'text/plain')
             ->header('Content-Disposition', 'attachment; filename="test.txt"');
     })->name('admin.test-export');
-    Route::get('/schedules/bulk-create', [App\Http\Controllers\Admin\ScheduleController::class, 'bulkCreate'])->name('admin.schedules.bulk-create');
-    Route::post('/schedules/bulk-store', [App\Http\Controllers\Admin\ScheduleController::class, 'bulkStore'])->name('admin.schedules.bulk-store');
-    Route::get('/schedules/analytics', [App\Http\Controllers\Admin\ScheduleController::class, 'analytics'])->name('admin.schedules.analytics');
 });
 
 // Тестовый маршрут без middleware для проверки

@@ -73,7 +73,7 @@
                     v-model="form.department_id"
                     label="Кафедра"
                     prepend-inner-icon="mdi-office-building"
-                    :items="departments"
+                    :items="departments || []"
                     item-title="name"
                     item-value="id"
                     variant="outlined"
@@ -319,7 +319,7 @@
             <div class="mb-4">
               <div class="d-flex justify-space-between align-center mb-2">
                 <span class="text-body-2">Кафедр</span>
-                <span class="text-h6 font-weight-bold text-info">{{ departments.length || 0 }}</span>
+                <span class="text-h6 font-weight-bold text-info">{{ departments?.length || 0 }}</span>
               </div>
               <v-progress-linear
                 :model-value="100"
