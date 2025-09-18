@@ -368,6 +368,8 @@ const submit = () => {
   form.post('/admin/schedules', {
     onSuccess: (page) => {
       processing.value = false
+      // Перенаправляем на список расписаний
+      router.visit('/admin/schedules')
     },
     onError: (errors) => {
       processing.value = false

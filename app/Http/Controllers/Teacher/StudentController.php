@@ -116,7 +116,7 @@ class StudentController extends Controller
             'stats' => [
                 'total_students' => $students->count(),
                 'total_lessons' => $schedules->count(),
-                'active_lessons' => $schedules->where('is_active', true)->count(),
+                'active_lessons' => $schedules->count(),
             ]
         ]);
     }

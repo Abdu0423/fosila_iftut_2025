@@ -106,7 +106,7 @@ class ScheduleController extends Controller
             $q->where('name', 'teacher');
         })->get();
         $syllabuses = Syllabus::with(['lesson', 'creator'])->get();
-        $lessons = Lesson::with(['subject', 'teacher'])->where('is_active', true)->get();
+        $lessons = Lesson::with(['subject', 'teacher'])->get();
 
         // \Log::info('Schedule Create - Data loaded', [
         //     'subjects_count' => $subjects->count(),
@@ -189,7 +189,7 @@ class ScheduleController extends Controller
             $q->where('name', 'teacher');
         })->get();
         $syllabuses = Syllabus::with(['lesson', 'creator'])->get();
-        $lessons = Lesson::with(['subject', 'teacher'])->where('is_active', true)->get();
+        $lessons = Lesson::with(['subject', 'teacher'])->get();
 
         return Inertia::render('Admin/Schedules/Edit', [
             'schedule' => $schedule,
@@ -382,7 +382,7 @@ class ScheduleController extends Controller
     public function lessons(Schedule $schedule)
     {
         $schedule->load(['subject', 'teacher', 'group', 'lessons.subject', 'lessons.teacher']);
-        $lessons = Lesson::with(['subject', 'teacher'])->where('is_active', true)->get();
+        $lessons = Lesson::with(['subject', 'teacher'])->get();
 
         return Inertia::render('Admin/Schedules/Lessons', [
             'schedule' => $schedule,

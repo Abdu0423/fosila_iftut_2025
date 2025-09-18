@@ -1,214 +1,312 @@
 <template>
-  <AdminLayout>
-    <v-row>
-      <v-col cols="12">
-        <div class="d-flex justify-space-between align-center mb-4">
-          <h1 class="text-h4">Редактировать урок</h1>
-          <v-btn
-            variant="outlined"
-            :href="route('admin.lessons.index')"
-            prepend-icon="mdi-arrow-left"
-          >
-            Назад к списку
-          </v-btn>
-        </div>
-      </v-col>
-    </v-row>
-
-    <v-row>
-      <v-col cols="12" md="8">
-        <v-card>
-          <v-card-title>Информация об уроке</v-card-title>
-          <v-card-text>
-            <v-form @submit.prevent="submit">
-              <v-row>
-                <v-col cols="12">
-                  <v-text-field
-                    v-model="form.title"
-                    label="Название урока"
-                    :error-messages="form.errors.title"
-                    required
-                  ></v-text-field>
-                </v-col>
-
-                <v-col cols="12" md="6">
-                  <v-select
-                    v-model="form.course"
-                    label="Курс"
-                    :items="[1, 2, 3, 4, 5, 6]"
-                    :error-messages="form.errors.course"
-                    required
-                  ></v-select>
-                </v-col>
-
-                <v-col cols="12" md="6">
-                  <v-select
-                    v-model="form.department_id"
-                    label="Кафедра"
-                    :items="departments"
-                    item-title="name"
-                    item-value="id"
-                    :error-messages="form.errors.department_id"
-                    required
-                  ></v-select>
-                </v-col>
-
-                <v-col cols="12">
-                  <v-textarea
-                    v-model="form.content"
-                    label="Описание урока"
-                    :error-messages="form.errors.content"
-                    rows="4"
-                  ></v-textarea>
-                </v-col>
-
-                <v-col cols="12">
-                  <v-switch
-                    v-model="form.is_active"
-                    label="Активный урок"
-                    color="primary"
-                  ></v-switch>
-                </v-col>
-              </v-row>
-
-              <v-row>
-                <v-col cols="12">
-                  <div class="d-flex gap-2">
-                    <v-btn
-                      type="submit"
-                      color="primary"
-                      :loading="form.processing"
-                      prepend-icon="mdi-content-save"
-                    >
-                      Сохранить изменения
-                    </v-btn>
-                    
-                    <v-btn
-                      variant="outlined"
-                      :href="route('admin.lessons.show', lesson.id)"
-                      :disabled="form.processing"
-                    >
-                      Отмена
-                    </v-btn>
-                  </div>
-                </v-col>
-              </v-row>
-            </v-form>
-          </v-card-text>
-        </v-card>
-      </v-col>
-
-      <v-col cols="12" md="4">
-        <v-card>
-          <v-card-title>Информация об уроке</v-card-title>
-          <v-card-text>
-            <v-list>
-              <v-list-item>
-                <v-list-item-title>ID урока</v-list-item-title>
-                <v-list-item-subtitle>{{ lesson.id }}</v-list-item-subtitle>
-              </v-list-item>
-              
-              <v-list-item>
-                <v-list-item-title>Дата создания</v-list-item-title>
-                <v-list-item-subtitle>{{ formatDate(lesson.created_at) }}</v-list-item-subtitle>
-              </v-list-item>
-              
-              <v-list-item>
-                <v-list-item-title>Последнее обновление</v-list-item-title>
-                <v-list-item-subtitle>{{ formatDate(lesson.updated_at) }}</v-list-item-subtitle>
-              </v-list-item>
-            </v-list>
-          </v-card-text>
-        </v-card>
-
-        <v-card class="mt-4">
-          <v-card-title>Действия</v-card-title>
-          <v-card-text>
+  <Layout role="admin">
+    <v-container fluid>
+      <!-- Заголовок -->
+      <v-row>
+        <v-col cols="12">
+          <div class="d-flex justify-space-between align-center mb-6">
+            <div>
+              <h1 class="text-h4 font-weight-bold mb-2">Редактировать урок</h1>
+              <p class="text-body-1 text-medium-emphasis">Обновите информацию об уроке</p>
+            </div>
             <v-btn
-              block
-              color="info"
-              :href="route('admin.lessons.show', lesson.id)"
-              prepend-icon="mdi-eye"
-            >
-              Просмотреть урок
-            </v-btn>
-            
-            <v-btn
-              block
-              color="error"
+              color="secondary"
               variant="outlined"
-              class="mt-2"
-              prepend-icon="mdi-delete"
-              @click="deleteLesson"
+              @click="router.visit('/admin/lessons')"
+              prepend-icon="mdi-arrow-left"
             >
-              Удалить урок
+              Назад к списку
             </v-btn>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
+          </div>
+        </v-col>
+      </v-row>
 
-    <!-- Диалог подтверждения удаления -->
-    <v-dialog v-model="deleteDialog" max-width="400">
-      <v-card>
-        <v-card-title>Подтверждение удаления</v-card-title>
-        <v-card-text>
-          Вы действительно хотите удалить урок "{{ lesson.title }}"?
-          Это действие нельзя отменить.
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn @click="deleteDialog = false">Отмена</v-btn>
-          <v-btn color="error" @click="confirmDelete">Удалить</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-  </AdminLayout>
+      <!-- Форма редактирования урока -->
+      <v-row justify="center">
+        <v-col cols="12" md="8" lg="6">
+          <v-card>
+            <v-card-title class="text-h6">
+              <v-icon start>mdi-book-edit</v-icon>
+              Информация об уроке
+            </v-card-title>
+            <v-card-text>
+              <v-form @submit.prevent="submitForm">
+                <!-- Основная информация -->
+                <v-row>
+                  <v-col cols="12">
+                    <v-text-field
+                      v-model="form.title"
+                      label="Название урока"
+                      variant="outlined"
+                      density="compact"
+                      :error-messages="form.errors.title"
+                      required
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+
+                <v-row>
+                  <v-col cols="12">
+                    <v-textarea
+                      v-model="form.description"
+                      label="Описание урока"
+                      variant="outlined"
+                      density="compact"
+                      :error-messages="form.errors.description"
+                      rows="3"
+                      auto-grow
+                    ></v-textarea>
+                  </v-col>
+                </v-row>
+
+                <!-- Предмет -->
+                <v-row>
+                  <v-col cols="12">
+                    <v-select
+                      v-model="form.subject_id"
+                      :items="subjects"
+                      item-title="name"
+                      item-value="id"
+                      label="Предмет"
+                      variant="outlined"
+                      density="compact"
+                      :error-messages="form.errors.subject_id"
+                      required
+                    ></v-select>
+                  </v-col>
+                </v-row>
+
+                <!-- Текущий файл -->
+                <v-row v-if="lesson.file_name">
+                  <v-col cols="12">
+                    <v-card variant="outlined" class="pa-4">
+                      <v-card-title class="text-h6">
+                        <v-icon start>mdi-file</v-icon>
+                        Текущий файл
+                      </v-card-title>
+                      <v-card-text>
+                        <div class="d-flex align-center">
+                          <v-icon size="48" color="primary" class="mr-4">mdi-file-document</v-icon>
+                          <div class="flex-grow-1">
+                            <div class="text-body-1 font-weight-medium">{{ lesson.file_name }}</div>
+                            <div class="text-body-2 text-medium-emphasis">
+                              Размер: {{ lesson.file_size_formatted || 'Неизвестно' }}
+                            </div>
+                            <div class="text-body-2 text-medium-emphasis">
+                              Тип: {{ lesson.file_type || 'Неизвестно' }}
+                            </div>
+                          </div>
+                          <v-btn
+                            v-if="lesson.download_url"
+                            color="primary"
+                            variant="outlined"
+                            size="small"
+                            :href="lesson.download_url"
+                            target="_blank"
+                          >
+                            Скачать
+                          </v-btn>
+                        </div>
+                      </v-card-text>
+                    </v-card>
+                  </v-col>
+                </v-row>
+
+                <!-- Загрузка нового файла -->
+                <v-row>
+                  <v-col cols="12">
+                    <v-file-input
+                      v-model="form.file"
+                      label="Новый файл урока (необязательно)"
+                      variant="outlined"
+                      density="compact"
+                      :error-messages="form.errors.file"
+                      accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif,.bmp,.webp"
+                      :rules="fileRules"
+                      prepend-icon="mdi-file-upload"
+                      @change="handleFileChange"
+                    >
+                      <template v-slot:selection="{ fileNames }">
+                        <template v-for="fileName in fileNames" :key="fileName">
+                          <v-chip
+                            size="small"
+                            label
+                            color="primary"
+                            class="me-2"
+                          >
+                            {{ fileName }}
+                          </v-chip>
+                        </template>
+                      </template>
+                    </v-file-input>
+                    <v-alert
+                      type="info"
+                      variant="tonal"
+                      class="mt-2"
+                    >
+                      Если вы загрузите новый файл, старый файл будет заменен.
+                    </v-alert>
+                  </v-col>
+                </v-row>
+
+                <!-- Предварительный просмотр нового файла -->
+                <v-row v-if="previewData">
+                  <v-col cols="12">
+                    <v-card variant="outlined" class="pa-4">
+                      <v-card-title class="text-h6">
+                        <v-icon start>mdi-eye</v-icon>
+                        Предварительный просмотр нового файла
+                      </v-card-title>
+                      <v-card-text>
+                        <v-row>
+                          <v-col cols="12" md="6">
+                            <div class="text-body-2">
+                              <strong>Название:</strong> {{ form.title }}
+                            </div>
+                            <div class="text-body-2 mt-2">
+                              <strong>Описание:</strong> {{ form.description || 'Не указано' }}
+                            </div>
+                            <div class="text-body-2 mt-2">
+                              <strong>Предмет:</strong> {{ selectedSubjectName }}
+                            </div>
+                          </v-col>
+                          <v-col cols="12" md="6">
+                            <div class="text-body-2">
+                              <strong>Новый файл:</strong> {{ previewData.fileName }}
+                            </div>
+                            <div class="text-body-2 mt-2">
+                              <strong>Размер:</strong> {{ previewData.fileSize }}
+                            </div>
+                            <div class="text-body-2 mt-2">
+                              <strong>Тип:</strong> {{ previewData.fileType }}
+                            </div>
+                          </v-col>
+                        </v-row>
+                      </v-card-text>
+                    </v-card>
+                  </v-col>
+                </v-row>
+
+                <!-- Ошибки -->
+                <v-alert
+                  v-if="Object.keys(form.errors).length > 0"
+                  type="error"
+                  variant="tonal"
+                  class="mb-4"
+                >
+                  <div v-for="(error, field) in form.errors" :key="field">
+                    <strong>{{ field }}:</strong> {{ error }}
+                  </div>
+                </v-alert>
+
+                <!-- Кнопки -->
+                <div class="d-flex justify-end gap-3">
+                  <v-btn
+                    color="secondary"
+                    variant="outlined"
+                    @click="router.visit('/admin/lessons')"
+                  >
+                    Отмена
+                  </v-btn>
+                  <v-btn
+                    color="primary"
+                    type="submit"
+                    :loading="form.processing"
+                    :disabled="form.processing"
+                  >
+                    Обновить урок
+                  </v-btn>
+                </div>
+              </v-form>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </v-container>
+  </Layout>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useForm, router } from '@inertiajs/vue3'
 import Layout from '../../Layout.vue'
 
+// Props из Inertia
 const props = defineProps({
-  lesson: Object,
-  departments: Array,
+  lesson: {
+    type: Object,
+    required: true
+  },
+  subjects: {
+    type: Array,
+    default: () => []
+  }
 })
 
-const deleteDialog = ref(false)
-
+// Форма
 const form = useForm({
-  title: props.lesson.title,
-  content: props.lesson.content,
-  course: props.lesson.course,
-  department_id: props.lesson.department_id,
-  is_active: props.lesson.is_active,
+  title: props.lesson.title || '',
+  description: props.lesson.description || '',
+  subject_id: props.lesson.subject_id || '',
+  file: null
 })
 
-const submit = () => {
-  form.put(route('admin.lessons.update', props.lesson.id))
+// Состояние
+const previewData = ref(null)
+
+// Правила валидации файла
+const fileRules = [
+  (value) => {
+    if (!value) return true // Файл не обязателен при редактировании
+    if (value.size > 10 * 1024 * 1024) return 'Размер файла не должен превышать 10MB'
+    return true
+  }
+]
+
+// Вычисляемые свойства
+const selectedSubjectName = computed(() => {
+  const subject = props.subjects.find(s => s.id == form.subject_id)
+  return subject ? subject.name : 'Не выбран'
+})
+
+// Методы
+const handleFileChange = (file) => {
+  if (file) {
+    previewData.value = {
+      fileName: file.name,
+      fileSize: formatFileSize(file.size),
+      fileType: file.type || 'Неизвестный тип'
+    }
+  } else {
+    previewData.value = null
+  }
 }
 
-const deleteLesson = () => {
-  deleteDialog.value = true
+const formatFileSize = (bytes) => {
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
-const confirmDelete = () => {
-  router.delete(route('admin.lessons.destroy', props.lesson.id), {
-    onSuccess: () => {
-      deleteDialog.value = false
+const submitForm = () => {
+  console.log('Обновление урока...')
+  console.log('Form data:', form.data())
+  
+  form.put(`/admin/lessons/${props.lesson.id}`, {
+    onSuccess: (page) => {
+      console.log('Урок успешно обновлен', page)
+    },
+    onError: (errors) => {
+      console.error('Ошибки валидации:', errors)
     }
   })
 }
-
-const formatDate = (date) => {
-  return new Date(date).toLocaleDateString('ru-RU', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
 </script>
+
+<style scoped>
+.v-card {
+  border-radius: 12px;
+}
+</style>

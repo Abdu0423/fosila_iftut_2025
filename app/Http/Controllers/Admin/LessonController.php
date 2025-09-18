@@ -5,7 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Lesson;
-use App\Models\Department;
+use App\Models\Subject;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class LessonController extends Controller
@@ -16,54 +17,54 @@ class LessonController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Lesson::with(['department']);
+            $query = Lesson::with(['subject']);
 
             // Получаем фильтры из сессии или запроса
             $search = $request->get('search', session('lessons_search'));
-            $departmentId = $request->get('department_id', session('lessons_department_id'));
+            $subjectId = $request->get('subject_id', session('lessons_subject_id'));
             $page = $request->get('page', 1);
             $sortBy = $request->get('sortBy', session('lessons_sort_by', 'title'));
             $sortDesc = $request->boolean('sortDesc', session('lessons_sort_desc', false));
 
             // Сохраняем фильтры в сессии
             session(['lessons_search' => $search]);
-            session(['lessons_department_id' => $departmentId]);
+            session(['lessons_subject_id' => $subjectId]);
             session(['lessons_sort_by' => $sortBy]);
             session(['lessons_sort_desc' => $sortDesc]);
 
             // Применяем фильтры
             if ($search) {
                 $query->where('title', 'like', "%{$search}%")
-                      ->orWhere('content', 'like', "%{$search}%");
+                      ->orWhere('description', 'like', "%{$search}%");
             }
 
-            if ($departmentId) {
-                $query->where('department_id', $departmentId);
+            if ($subjectId) {
+                $query->where('subject_id', $subjectId);
             }
 
             // Сортировка
             $query->orderBy($sortBy, $sortDesc ? 'desc' : 'asc');
 
             $lessons = $query->paginate(15);
-            $departments = Department::all();
+            $subjects = Subject::all();
 
             \Log::info('Lessons index called', [
                 'lessons_count' => $lessons->count(),
-                'departments_count' => $departments->count(),
+                'subjects_count' => $subjects->count(),
                 'filters' => [
                     'search' => $search,
-                    'department_id' => $departmentId,
+                    'subject_id' => $subjectId,
                     'sortBy' => $sortBy,
                     'sortDesc' => $sortDesc
                 ]
             ]);
 
             return Inertia::render('Admin/Lessons/Index', [
-                'lessons' => $lessons,
-                'departments' => $departments,
+                'lessons' => $lessons ?: (object)['data' => []],
+                'subjects' => $subjects,
                 'filters' => [
                     'search' => $search,
-                    'department_id' => $departmentId,
+                    'subject_id' => $subjectId,
                     'sortBy' => $sortBy,
                     'sortDesc' => $sortDesc
                 ],
@@ -75,8 +76,8 @@ class LessonController extends Controller
             ]);
             
             return Inertia::render('Admin/Lessons/Index', [
-                'lessons' => collect([])->paginate(15),
-                'departments' => collect([]),
+                'lessons' => (object)['data' => []],
+                'subjects' => [],
                 'filters' => [],
                 'error' => 'Произошла ошибка при загрузке данных'
             ]);
@@ -89,33 +90,33 @@ class LessonController extends Controller
     public function filter(Request $request)
     {
         try {
-            $query = Lesson::with(['department']);
+            $query = Lesson::with(['subject']);
 
             // Поиск по названию
             if ($request->filled('search')) {
                 $search = $request->get('search');
                 $query->where('title', 'like', "%{$search}%")
-                      ->orWhere('content', 'like', "%{$search}%");
+                      ->orWhere('description', 'like', "%{$search}%");
             }
 
-            // Фильтр по кафедре
-            if ($request->filled('department_id')) {
-                $query->where('department_id', $request->get('department_id'));
+            // Фильтр по предмету
+            if ($request->filled('subject_id')) {
+                $query->where('subject_id', $request->get('subject_id'));
             }
 
             $lessons = $query->orderBy('title')->paginate(15);
-            $departments = Department::all();
+            $subjects = Subject::all();
 
             \Log::info('Lessons filter called', [
                 'lessons_count' => $lessons->count(),
-                'departments_count' => $departments->count(),
-                'filters' => $request->only(['search', 'department_id'])
+                'subjects_count' => $subjects->count(),
+                'filters' => $request->only(['search', 'subject_id'])
             ]);
 
             return Inertia::render('Admin/Lessons/Index', [
                 'lessons' => $lessons,
-                'departments' => $departments,
-                'filters' => $request->only(['search', 'department_id']),
+                'subjects' => $subjects,
+                'filters' => $request->only(['search', 'subject_id']),
             ]);
         } catch (\Exception $e) {
             \Log::error('Error in lessons filter', [
@@ -124,9 +125,9 @@ class LessonController extends Controller
             ]);
             
             return Inertia::render('Admin/Lessons/Index', [
-                'lessons' => collect([])->paginate(15),
-                'departments' => collect([]),
-                'filters' => $request->only(['search', 'department_id']),
+                'lessons' => (object)['data' => []],
+                'subjects' => [],
+                'filters' => $request->only(['search', 'subject_id']),
                 'error' => 'Произошла ошибка при фильтрации данных'
             ]);
         }
@@ -137,7 +138,7 @@ class LessonController extends Controller
      */
     public function clearFilters()
     {
-        session()->forget(['lessons_search', 'lessons_department_id', 'lessons_sort_by', 'lessons_sort_desc']);
+        session()->forget(['lessons_search', 'lessons_subject_id', 'lessons_sort_by', 'lessons_sort_desc']);
         return redirect()->route('admin.lessons.index');
     }
 
@@ -146,14 +147,14 @@ class LessonController extends Controller
      */
     public function create()
     {
-        $departments = Department::all();
+        // Получаем расписания с их предметами
+        $schedules = \App\Models\Schedule::with(['subject', 'group', 'teacher'])->get();
         $totalLessons = Lesson::count();
-        $activeLessons = Lesson::count();
+
 
         return Inertia::render('Admin/Lessons/Create', [
-            'departments' => $departments,
+            'schedules' => $schedules,
             'totalLessons' => $totalLessons,
-            'activeLessons' => $activeLessons,
         ]);
     }
 
@@ -164,14 +165,51 @@ class LessonController extends Controller
     {
         $request->validate([
             'title' => 'required|string|max:255',
-            'content' => 'nullable|string',
-            'department_id' => 'required|exists:departments,id',
+            'description' => 'nullable|string',
+            'schedule_id' => 'required|exists:schedules,id',
+            'file' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,txt,jpg,jpeg,png,gif,bmp,webp,md,html,css,js,json,xml,csv,log|max:10240'
         ]);
 
-        Lesson::create($request->all());
+        try {
+            // Получаем расписание для получения subject_id
+            $schedule = \App\Models\Schedule::findOrFail($request->schedule_id);
+            
+            $data = [
+                'title' => $request->title,
+                'description' => $request->description,
+                'subject_id' => $schedule->subject_id, // Берем subject_id из расписания
+            ];
 
-        return redirect()->route('admin.lessons.index')
-            ->with('success', 'Урок создан успешно!');
+            // Если загружен файл
+            if ($request->hasFile('file')) {
+                $file = $request->file('file');
+                $fileName = time() . '_' . $file->getClientOriginalName();
+                $filePath = $file->storeAs('lessons', $fileName, 'public');
+
+                $data['file_path'] = $filePath;
+                $data['file_name'] = $file->getClientOriginalName();
+                $data['file_type'] = $file->getMimeType();
+                $data['file_size'] = $file->getSize();
+            }
+
+            // Создаем урок
+            $lesson = Lesson::create($data);
+
+            // Привязываем урок к расписанию
+            $lesson->schedules()->attach($request->schedule_id, [
+                'order' => $schedule->lessons()->count() + 1,
+                'duration' => null,
+                'start_time' => null,
+                'end_time' => null,
+                'room' => null,
+                'notes' => null
+            ]);
+
+            return redirect()->route('admin.lessons.index')
+                ->with('success', 'Урок создан успешно и добавлен в расписание!');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Ошибка при создании урока: ' . $e->getMessage())->withInput();
+        }
     }
 
     /**
@@ -179,7 +217,7 @@ class LessonController extends Controller
      */
     public function show(Lesson $lesson)
     {
-        $lesson->load(['department', 'schedules.teacher', 'schedules.group']);
+        $lesson->load(['subject', 'schedules.teacher', 'schedules.group']);
         return Inertia::render('Admin/Lessons/Show', [
             'lesson' => $lesson,
         ]);
@@ -190,11 +228,11 @@ class LessonController extends Controller
      */
     public function edit(Lesson $lesson)
     {
-        $departments = Department::all();
+        $subjects = Subject::all();
 
         return Inertia::render('Admin/Lessons/Edit', [
             'lesson' => $lesson,
-            'departments' => $departments,
+            'subjects' => $subjects,
         ]);
     }
 
@@ -205,16 +243,42 @@ class LessonController extends Controller
     {
         $request->validate([
             'title' => 'required|string|max:255',
-            'content' => 'nullable|string',
-            'course' => 'required|integer|min:1|max:6',
-            'department_id' => 'required|exists:departments,id',
-            'is_active' => 'boolean',
+            'description' => 'nullable|string',
+            'subject_id' => 'required|exists:subjects,id',
+            'file' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,txt,jpg,jpeg,png,gif,bmp,webp,md,html,css,js,json,xml,csv,log|max:10240'
         ]);
 
-        $lesson->update($request->all());
+        try {
+            $data = [
+                'title' => $request->title,
+                'description' => $request->description,
+                'subject_id' => $request->subject_id,
+            ];
 
-        return redirect()->route('admin.lessons.index')
-            ->with('success', 'Урок обновлен успешно!');
+            // Если загружен новый файл
+            if ($request->hasFile('file')) {
+                // Удаляем старый файл
+                if ($lesson->file_path && Storage::disk('public')->exists($lesson->file_path)) {
+                    Storage::disk('public')->delete($lesson->file_path);
+                }
+
+                $file = $request->file('file');
+                $fileName = time() . '_' . $file->getClientOriginalName();
+                $filePath = $file->storeAs('lessons', $fileName, 'public');
+
+                $data['file_path'] = $filePath;
+                $data['file_name'] = $file->getClientOriginalName();
+                $data['file_type'] = $file->getMimeType();
+                $data['file_size'] = $file->getSize();
+            }
+
+            $lesson->update($data);
+
+            return redirect()->route('admin.lessons.index')
+                ->with('success', 'Урок обновлен успешно!');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Ошибка при обновлении урока: ' . $e->getMessage())->withInput();
+        }
     }
 
     /**
@@ -222,9 +286,18 @@ class LessonController extends Controller
      */
     public function destroy(Lesson $lesson)
     {
-        $lesson->delete();
+        try {
+            // Удаляем файл если он существует
+            if ($lesson->file_path && Storage::disk('public')->exists($lesson->file_path)) {
+                Storage::disk('public')->delete($lesson->file_path);
+            }
 
-        return redirect()->route('admin.lessons.index')
-            ->with('success', 'Урок удален успешно!');
+            $lesson->delete();
+
+            return redirect()->route('admin.lessons.index')
+                ->with('success', 'Урок удален успешно!');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Ошибка при удалении урока: ' . $e->getMessage());
+        }
     }
 }

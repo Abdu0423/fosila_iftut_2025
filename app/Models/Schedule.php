@@ -64,4 +64,12 @@ class Schedule extends Model
                     ->withTimestamps()
                     ->orderBy('lesson_schedule.order');
     }
+
+    /**
+     * Получить отображаемое имя расписания
+     */
+    public function getDisplayNameAttribute()
+    {
+        return $this->subject ? $this->subject->name : 'Расписание #' . $this->id;
+    }
 }

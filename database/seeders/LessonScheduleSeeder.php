@@ -16,7 +16,7 @@ class LessonScheduleSeeder extends Seeder
     {
         // Получаем все расписания и уроки
         $schedules = Schedule::all();
-        $lessons = Lesson::where('is_active', true)->get();
+        $lessons = Lesson::all();
 
         if ($schedules->isEmpty() || $lessons->isEmpty()) {
             $this->command->info('Нет данных для создания связей между расписанием и уроками');
