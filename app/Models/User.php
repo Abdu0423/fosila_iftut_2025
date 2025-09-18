@@ -96,4 +96,42 @@ class User extends Authenticatable
     {
         return $this->role && $this->role->name === 'student';
     }
+
+    /**
+     * Чаты пользователя
+     */
+    public function chats()
+    {
+        return $this->belongsToMany(Chat::class, 'chat_user')
+                    ->withPivot(['role', 'joined_at', 'last_read_at', 'is_muted', 'is_active'])
+                    ->withTimestamps();
+    }
+
+    /**
+     * Сообщения пользователя
+     */
+    public function chatMessages()
+    {
+        return $this->hasMany(ChatMessage::class);
+    }
+
+    /**
+     * Получить полное имя пользователя
+     */
+    public function getFullNameAttribute()
+    {
+        $parts = array_filter([$this->last_name, $this->name, $this->middle_name]);
+        return implode(' ', $parts) ?: $this->name;
+    }
+
+    /**
+     * Получить инициалы пользователя
+     */
+    public function getInitialsAttribute()
+    {
+        $initials = '';
+        if ($this->last_name) $initials .= mb_substr($this->last_name, 0, 1);
+        if ($this->name) $initials .= mb_substr($this->name, 0, 1);
+        return mb_strtoupper($initials);
+    }
 }

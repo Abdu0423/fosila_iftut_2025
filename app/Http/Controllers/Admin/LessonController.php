@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Lesson;
+use App\Models\Schedule;
 use App\Models\Subject;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -148,7 +149,7 @@ class LessonController extends Controller
     public function create()
     {
         // Получаем расписания с их предметами
-        $schedules = \App\Models\Schedule::with(['subject', 'group', 'teacher'])->get();
+        $schedules = Schedule::with(['subject', 'group', 'teacher'])->get();
         $totalLessons = Lesson::count();
 
 
@@ -228,11 +229,15 @@ class LessonController extends Controller
      */
     public function edit(Lesson $lesson)
     {
-        $subjects = Subject::all();
+        // Загружаем урок с его расписаниями
+        $lesson->load(['schedules.subject', 'schedules.group', 'schedules.teacher']);
+        
+        // Получаем все расписания с их предметами
+        $schedules = \App\Models\Schedule::with(['subject', 'group', 'teacher'])->get();
 
         return Inertia::render('Admin/Lessons/Edit', [
             'lesson' => $lesson,
-            'subjects' => $subjects,
+            'schedules' => $schedules,
         ]);
     }
 
@@ -244,15 +249,18 @@ class LessonController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'subject_id' => 'required|exists:subjects,id',
+            'schedule_id' => 'required|exists:schedules,id',
             'file' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,txt,jpg,jpeg,png,gif,bmp,webp,md,html,css,js,json,xml,csv,log|max:10240'
         ]);
 
         try {
+            // Получаем предмет из расписания
+            $schedule = \App\Models\Schedule::findOrFail($request->schedule_id);
+            
             $data = [
                 'title' => $request->title,
                 'description' => $request->description,
-                'subject_id' => $request->subject_id,
+                'subject_id' => $schedule->subject_id,
             ];
 
             // Если загружен новый файл
@@ -274,11 +282,44 @@ class LessonController extends Controller
 
             $lesson->update($data);
 
+            // Обновляем связь с расписанием
+            $lesson->schedules()->sync([$schedule->id => [
+                'order' => $schedule->lessons()->count() + 1,
+                'duration' => null,
+                'start_time' => null,
+                'end_time' => null,
+                'room' => null,
+                'notes' => null
+            ]]);
+
             return redirect()->route('admin.lessons.index')
                 ->with('success', 'Урок обновлен успешно!');
         } catch (\Exception $e) {
             return back()->with('error', 'Ошибка при обновлении урока: ' . $e->getMessage())->withInput();
         }
+    }
+
+    /**
+     * Show materials for the specified lesson.
+     */
+    public function materials(Lesson $lesson)
+    {
+        $lesson->load(['subject', 'schedules.teacher', 'schedules.group']);
+        return Inertia::render('Admin/Lessons/Materials', [
+            'lesson' => $lesson,
+        ]);
+    }
+
+    /**
+     * Download lesson file.
+     */
+    public function download(Lesson $lesson)
+    {
+        if (!$lesson->file_path || !Storage::disk('public')->exists($lesson->file_path)) {
+            abort(404, 'Файл не найден');
+        }
+
+        return Storage::disk('public')->download($lesson->file_path, $lesson->file_name);
     }
 
     /**
@@ -294,10 +335,16 @@ class LessonController extends Controller
 
             $lesson->delete();
 
-            return redirect()->route('admin.lessons.index')
-                ->with('success', 'Урок удален успешно!');
+            // Возвращаем успешный ответ без редиректа
+            return response()->json([
+                'success' => true,
+                'message' => 'Урок удален успешно!'
+            ]);
         } catch (\Exception $e) {
-            return back()->with('error', 'Ошибка при удалении урока: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при удалении урока: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

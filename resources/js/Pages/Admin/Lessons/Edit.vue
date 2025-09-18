@@ -59,20 +59,30 @@
                   </v-col>
                 </v-row>
 
-                <!-- Предмет -->
+                <!-- Расписание -->
                 <v-row>
                   <v-col cols="12">
                     <v-select
-                      v-model="form.subject_id"
-                      :items="subjects"
-                      item-title="name"
+                      v-model="form.schedule_id"
+                      :items="schedules"
+                      item-title="display_name"
                       item-value="id"
-                      label="Предмет"
+                      label="Расписание (Предмет)"
                       variant="outlined"
                       density="compact"
-                      :error-messages="form.errors.subject_id"
+                      :error-messages="form.errors.schedule_id"
                       required
-                    ></v-select>
+                    >
+                      <template v-slot:item="{ props, item }">
+                        <v-list-item v-bind="props">
+                          <v-list-item-title>{{ item.raw.display_name }}</v-list-item-title>
+                          <v-list-item-subtitle>
+                            Группа: {{ item.raw.group?.name || 'Не указана' }} | 
+                            Преподаватель: {{ item.raw.teacher?.name || 'Не указан' }}
+                          </v-list-item-subtitle>
+                        </v-list-item>
+                      </template>
+                    </v-select>
                   </v-col>
                 </v-row>
 
@@ -167,7 +177,13 @@
                               <strong>Описание:</strong> {{ form.description || 'Не указано' }}
                             </div>
                             <div class="text-body-2 mt-2">
-                              <strong>Предмет:</strong> {{ selectedSubjectName }}
+                              <strong>Расписание:</strong> {{ selectedScheduleInfo?.subjectName || 'Не выбрано' }}
+                            </div>
+                            <div class="text-body-2 mt-2">
+                              <strong>Группа:</strong> {{ selectedScheduleInfo?.groupName || 'Не указана' }}
+                            </div>
+                            <div class="text-body-2 mt-2">
+                              <strong>Преподаватель:</strong> {{ selectedScheduleInfo?.teacherName || 'Не указан' }}
                             </div>
                           </v-col>
                           <v-col cols="12" md="6">
@@ -237,7 +253,7 @@ const props = defineProps({
     type: Object,
     required: true
   },
-  subjects: {
+  schedules: {
     type: Array,
     default: () => []
   }
@@ -247,7 +263,7 @@ const props = defineProps({
 const form = useForm({
   title: props.lesson.title || '',
   description: props.lesson.description || '',
-  subject_id: props.lesson.subject_id || '',
+  schedule_id: props.lesson.schedules?.[0]?.id || '',
   file: null
 })
 
@@ -264,9 +280,15 @@ const fileRules = [
 ]
 
 // Вычисляемые свойства
-const selectedSubjectName = computed(() => {
-  const subject = props.subjects.find(s => s.id == form.subject_id)
-  return subject ? subject.name : 'Не выбран'
+const selectedScheduleInfo = computed(() => {
+  const schedule = props.schedules.find(s => s.id == form.schedule_id)
+  if (!schedule) return null
+  
+  return {
+    subjectName: schedule.subject?.name || 'Не указан',
+    groupName: schedule.group?.name || 'Не указана',
+    teacherName: schedule.teacher?.name || 'Не указан'
+  }
 })
 
 // Методы

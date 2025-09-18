@@ -73,12 +73,12 @@
                   <div class="text-body-2 mb-4">
                     <strong>Урок:</strong>
                     <v-chip
-                      :color="syllabus.lesson_name !== 'Не указан' ? 'primary' : 'grey'"
+                      :color="syllabus.subject_name !== 'Не указан' ? 'primary' : 'grey'"
                       variant="tonal"
                       size="small"
                       class="mt-1"
                     >
-                      {{ syllabus.lesson_name }}
+                      {{ syllabus.subject_name }}
                     </v-chip>
                   </div>
                   

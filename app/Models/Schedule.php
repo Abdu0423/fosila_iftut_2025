@@ -30,6 +30,10 @@ class Schedule extends Model
         'is_active' => 'boolean',
     ];
 
+    protected $appends = [
+        'display_name'
+    ];
+
     public function subject()
     {
         return $this->belongsTo(Subject::class);

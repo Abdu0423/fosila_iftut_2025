@@ -311,15 +311,40 @@ const confirmDelete = () => {
   if (!selectedLesson.value) return
   
   deleting.value = true
-  router.delete(`/admin/lessons/${selectedLesson.value.id}`, {
-    onSuccess: () => {
+  
+  // Используем fetch для отправки DELETE запроса
+  fetch(`/admin/lessons/${selectedLesson.value.id}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Удаляем урок из локального списка
+      const lessonIndex = lessonsData.value.findIndex(lesson => lesson.id === selectedLesson.value.id)
+      if (lessonIndex > -1) {
+        lessonsData.value.splice(lessonIndex, 1)
+      }
+      
+      // Закрываем диалог
       deleteDialog.value = false
       selectedLesson.value = null
-      deleting.value = false
-    },
-    onError: () => {
-      deleting.value = false
+      
+      // Показываем уведомление об успехе
+      console.log('Урок успешно удален:', data.message)
+    } else {
+      console.error('Ошибка при удалении урока:', data.message)
     }
+  })
+  .catch(error => {
+    console.error('Ошибка при удалении урока:', error)
+  })
+  .finally(() => {
+    deleting.value = false
   })
 }
 </script>

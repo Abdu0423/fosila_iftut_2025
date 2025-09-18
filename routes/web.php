@@ -59,9 +59,13 @@ Route::get('/assignments/{assignment}', function ($assignment) {
 })->name('assignments.show');
 
 // Чат
-Route::get('/chat', function () {
-    return Inertia::render('Chat/Index');
-})->name('chat.index');
+Route::get('/chat', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
+Route::get('/chat/{chat}', [App\Http\Controllers\ChatController::class, 'show'])->name('chat.show');
+Route::post('/chat', [App\Http\Controllers\ChatController::class, 'store'])->name('chat.store');
+Route::post('/chat/{chat}/messages', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('chat.send-message');
+Route::get('/chat/{chat}/messages', [App\Http\Controllers\ChatController::class, 'getMessages'])->name('chat.get-messages');
+Route::post('/chat/{chat}/read', [App\Http\Controllers\ChatController::class, 'markAsRead'])->name('chat.mark-read');
+Route::delete('/chat/{chat}/leave', [App\Http\Controllers\ChatController::class, 'leave'])->name('chat.leave');
 
 // Библиотека
 Route::get('/library', function () {
@@ -191,21 +195,19 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/syllabuses/{syllabus}/word-html', [App\Http\Controllers\Admin\SyllabusController::class, 'convertWordToHtml'])->name('admin.syllabuses.word-html');
     
     // Управление уроками
-    Route::get('/lessons', function () {
-        return Inertia::render('Admin/Lessons/Index');
-    })->name('admin.lessons.index');
+    Route::get('/lessons', [App\Http\Controllers\Admin\LessonController::class, 'index'])->name('admin.lessons.index');
+    Route::get('/lessons/create', [App\Http\Controllers\Admin\LessonController::class, 'create'])->name('admin.lessons.create');
+    Route::post('/lessons', [App\Http\Controllers\Admin\LessonController::class, 'store'])->name('admin.lessons.store');
+    Route::get('/lessons/{lesson}', [App\Http\Controllers\Admin\LessonController::class, 'show'])->name('admin.lessons.show');
+    Route::get('/lessons/{lesson}/edit', [App\Http\Controllers\Admin\LessonController::class, 'edit'])->name('admin.lessons.edit');
+    Route::put('/lessons/{lesson}', [App\Http\Controllers\Admin\LessonController::class, 'update'])->name('admin.lessons.update');
+    Route::delete('/lessons/{lesson}', [App\Http\Controllers\Admin\LessonController::class, 'destroy'])->name('admin.lessons.destroy');
+    Route::get('/lessons/{lesson}/materials', [App\Http\Controllers\Admin\LessonController::class, 'materials'])->name('admin.lessons.materials');
     
-    Route::get('/lessons/create', function () {
-        return Inertia::render('Admin/Lessons/Create');
-    })->name('admin.lessons.create');
-    
-    Route::get('/lessons/{lesson}/edit', function ($lesson) {
-        return Inertia::render('Admin/Lessons/Edit', ['lesson' => $lesson]);
-    })->name('admin.lessons.edit');
-    
-    Route::get('/lessons/{lesson}/materials', function ($lesson) {
-        return Inertia::render('Admin/Lessons/Materials', ['lesson' => $lesson]);
-    })->name('admin.lessons.materials');
+    // Дополнительные маршруты для уроков
+    Route::post('/lessons/filter', [App\Http\Controllers\Admin\LessonController::class, 'filter'])->name('admin.lessons.filter');
+    Route::post('/lessons/clear-filters', [App\Http\Controllers\Admin\LessonController::class, 'clearFilters'])->name('admin.lessons.clear-filters');
+    Route::get('/lessons/{lesson}/download', [App\Http\Controllers\Admin\LessonController::class, 'download'])->name('admin.lessons.download');
     
     // Управление тестами
     Route::get('/tests', function () {

@@ -105,8 +105,8 @@ class ScheduleController extends Controller
         $teachers = User::whereHas('role', function($q) {
             $q->where('name', 'teacher');
         })->get();
-        $syllabuses = Syllabus::with(['lesson', 'creator'])->get();
-        $lessons = Lesson::with(['subject', 'teacher'])->get();
+        $syllabuses = Syllabus::with(['creator'])->get();
+        $lessons = Lesson::with(['subject'])->get();
 
         // \Log::info('Schedule Create - Data loaded', [
         //     'subjects_count' => $subjects->count(),
@@ -169,7 +169,7 @@ class ScheduleController extends Controller
      */
     public function show(Schedule $schedule)
     {
-        $schedule->load(['subject', 'teacher', 'group', 'syllabuses.lesson', 'syllabuses.creator', 'lessons.subject', 'lessons.teacher']);
+        $schedule->load(['subject', 'teacher', 'group', 'syllabuses.creator', 'lessons.subject']);
 
         return Inertia::render('Admin/Schedules/Show', [
             'schedule' => $schedule
@@ -188,8 +188,8 @@ class ScheduleController extends Controller
         $teachers = User::whereHas('role', function($q) {
             $q->where('name', 'teacher');
         })->get();
-        $syllabuses = Syllabus::with(['lesson', 'creator'])->get();
-        $lessons = Lesson::with(['subject', 'teacher'])->get();
+        $syllabuses = Syllabus::with(['creator'])->get();
+        $lessons = Lesson::with(['subject'])->get();
 
         return Inertia::render('Admin/Schedules/Edit', [
             'schedule' => $schedule,
@@ -381,8 +381,8 @@ class ScheduleController extends Controller
      */
     public function lessons(Schedule $schedule)
     {
-        $schedule->load(['subject', 'teacher', 'group', 'lessons.subject', 'lessons.teacher']);
-        $lessons = Lesson::with(['subject', 'teacher'])->get();
+        $schedule->load(['subject', 'teacher', 'group', 'lessons.subject']);
+        $lessons = Lesson::with(['subject'])->get();
 
         return Inertia::render('Admin/Schedules/Lessons', [
             'schedule' => $schedule,

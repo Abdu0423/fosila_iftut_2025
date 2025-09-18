@@ -212,7 +212,7 @@ const props = defineProps({
 const form = useForm({
   name: props.syllabus.name,
   description: props.syllabus.description || '',
-  lesson_id: props.syllabus.lesson_id,
+  subject_id: props.syllabus.subject_id,
   creation_year: props.syllabus.creation_year,
   file: null
 })

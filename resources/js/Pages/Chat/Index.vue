@@ -1,320 +1,463 @@
 <template>
-  <Layout role="student">
-    <div class="chat-page">
-      <v-container fluid class="pa-0">
-      <v-row no-gutters style="height: calc(100vh - 64px);">
-        <!-- Список чатов -->
-        <v-col cols="12" md="4" class="border-right">
-          <v-card flat height="100%">
-            <v-card-title class="d-flex align-center">
-              <v-icon class="mr-2">mdi-chat</v-icon>
-              Чаты
-              <v-spacer></v-spacer>
-              <v-btn icon @click="showNewChatDialog = true">
-                <v-icon>mdi-plus</v-icon>
-              </v-btn>
+  <Layout role="admin">
+    <v-container fluid>
+      <!-- Заголовок -->
+      <v-row>
+        <v-col cols="12">
+          <div class="d-flex justify-space-between align-center mb-6">
+            <div>
+              <h1 class="text-h4 font-weight-bold mb-2">Чаты</h1>
+              <p class="text-body-1 text-medium-emphasis">Общайтесь с пользователями системы</p>
+            </div>
+            <v-btn
+              color="primary"
+              variant="elevated"
+              @click="showNewChatDialog = true"
+              prepend-icon="mdi-plus"
+            >
+              Новый чат
+            </v-btn>
+          </div>
+        </v-col>
+      </v-row>
+
+      <!-- Список чатов -->
+      <v-row>
+        <v-col cols="12" md="4">
+          <v-card>
+            <v-card-title class="text-h6">
+              <v-icon start>mdi-chat</v-icon>
+              Мои чаты
             </v-card-title>
-            
-            <v-divider></v-divider>
-            
-            <v-list dense>
-              <v-list-item
-                v-for="chat in chats"
-                :key="chat.id"
-                :class="{ 'active-chat': selectedChat?.id === chat.id }"
-                @click="selectChat(chat)"
-              >
-                <v-list-item-avatar>
-                  <v-img :src="chat.avatar" v-if="chat.avatar"></v-img>
-                  <v-icon v-else>mdi-account</v-icon>
-                </v-list-item-avatar>
-                
-                <v-list-item-content>
-                  <v-list-item-title>{{ chat.name }}</v-list-item-title>
-                  <v-list-item-subtitle>{{ chat.lastMessage }}</v-list-item-subtitle>
-                </v-list-item-content>
-                
-                <v-list-item-action>
-                  <v-chip
-                    v-if="chat.unreadCount > 0"
-                    color="primary"
-                    small
-                    text-color="white"
-                  >
-                    {{ chat.unreadCount }}
-                  </v-chip>
-                  <span class="caption text-grey">{{ chat.lastMessageTime }}</span>
-                </v-list-item-action>
-              </v-list-item>
-            </v-list>
+            <v-card-text class="pa-0">
+              <v-list>
+                <v-list-item
+                  v-for="chat in chats"
+                  :key="chat.id"
+                  :to="`/chat/${chat.id}`"
+                  :active="selectedChatId === chat.id"
+                  @click="selectChat(chat.id)"
+                  class="chat-item"
+                >
+                  <template v-slot:prepend>
+                    <v-avatar
+                      :color="chat.display_avatar ? 'transparent' : 'primary'"
+                      size="48"
+                    >
+                      <v-img
+                        v-if="chat.display_avatar"
+                        :src="chat.display_avatar"
+                        :alt="chat.display_name"
+                      ></v-img>
+                      <span v-else class="text-white font-weight-bold">
+                        {{ getInitials(chat.display_name) }}
+                      </span>
+                    </v-avatar>
+                  </template>
+
+                  <v-list-item-title class="text-subtitle-1">
+                    {{ chat.display_name }}
+                  </v-list-item-title>
+                  
+                  <v-list-item-subtitle class="text-body-2">
+                    <div v-if="chat.last_message" class="d-flex align-center">
+                      <span class="text-truncate mr-2">
+                        {{ chat.last_message.user.name }}: {{ chat.last_message.message }}
+                      </span>
+                      <span class="text-caption text-medium-emphasis">
+                        {{ formatTime(chat.last_message.created_at) }}
+                      </span>
+                    </div>
+                    <span v-else class="text-medium-emphasis">Нет сообщений</span>
+                  </v-list-item-subtitle>
+
+                  <template v-slot:append>
+                    <v-chip
+                      v-if="chat.unread_count > 0"
+                      color="primary"
+                      size="small"
+                      class="ml-2"
+                    >
+                      {{ chat.unread_count }}
+                    </v-chip>
+                  </template>
+                </v-list-item>
+
+                <v-list-item v-if="chats.length === 0" class="text-center">
+                  <v-list-item-title class="text-medium-emphasis">
+                    У вас пока нет чатов
+                  </v-list-item-title>
+                </v-list-item>
+              </v-list>
+            </v-card-text>
           </v-card>
         </v-col>
-        
-        <!-- Область сообщений -->
-        <v-col cols="12" md="8" class="d-flex flex-column">
-          <v-card flat height="100%">
-            <!-- Заголовок чата -->
-            <v-card-title v-if="selectedChat" class="d-flex align-center">
-              <v-avatar size="32" class="mr-3">
-                <v-img :src="selectedChat.avatar" v-if="selectedChat.avatar"></v-img>
-                <v-icon v-else>mdi-account</v-icon>
+
+        <!-- Область чата -->
+        <v-col cols="12" md="8">
+          <v-card v-if="selectedChat" class="chat-container">
+            <v-card-title class="d-flex align-center">
+              <v-avatar
+                :color="selectedChat.display_avatar ? 'transparent' : 'primary'"
+                size="40"
+                class="mr-3"
+              >
+                <v-img
+                  v-if="selectedChat.display_avatar"
+                  :src="selectedChat.display_avatar"
+                  :alt="selectedChat.display_name"
+                ></v-img>
+                <span v-else class="text-white font-weight-bold">
+                  {{ getInitials(selectedChat.display_name) }}
+                </span>
               </v-avatar>
-              {{ selectedChat.name }}
+              <div>
+                <div class="text-h6">{{ selectedChat.display_name }}</div>
+                <div class="text-caption text-medium-emphasis">
+                  {{ selectedChat.type === 'private' ? 'Приватный чат' : 'Групповой чат' }}
+                </div>
+              </div>
               <v-spacer></v-spacer>
-              <v-btn icon>
-                <v-icon>mdi-phone</v-icon>
-              </v-btn>
-              <v-btn icon>
-                <v-icon>mdi-video</v-icon>
-              </v-btn>
-              <v-btn icon>
-                <v-icon>mdi-dots-vertical</v-icon>
+              <v-btn
+                icon="mdi-account-minus"
+                variant="text"
+                @click="leaveChat"
+                color="error"
+              >
+                <v-icon>mdi-exit-to-app</v-icon>
+                <v-tooltip activator="parent" location="bottom">
+                  Покинуть чат
+                </v-tooltip>
               </v-btn>
             </v-card-title>
-            
-            <v-divider v-if="selectedChat"></v-divider>
-            
+
             <!-- Сообщения -->
-            <div
-              v-if="selectedChat"
-              class="messages-container"
-              ref="messagesContainer"
-            >
-              <div
-                v-for="message in selectedChat.messages"
-                :key="message.id"
-                class="message-wrapper"
-                :class="{ 'message-own': message.isOwn }"
-              >
-                <v-card
-                  class="message"
-                  :class="{ 'message-own': message.isOwn }"
-                  max-width="70%"
+            <v-card-text class="chat-messages pa-0" ref="messagesContainer">
+              <div v-if="messages.length === 0" class="text-center pa-8">
+                <v-icon size="64" color="grey-lighten-1">mdi-chat-outline</v-icon>
+                <div class="text-h6 text-medium-emphasis mt-4">Начните общение</div>
+                <div class="text-body-2 text-medium-emphasis">
+                  Отправьте первое сообщение в этом чате
+                </div>
+              </div>
+
+              <div v-else class="messages-list">
+                <div
+                  v-for="message in messages"
+                  :key="message.id"
+                  class="message-item"
+                  :class="{ 'message-own': message.is_from_current_user }"
                 >
-                  <v-card-text class="py-2">
-                    <div class="message-content">{{ message.text }}</div>
-                    <div class="message-time caption text-grey">
-                      {{ message.time }}
+                  <div class="message-content">
+                    <div class="message-header" v-if="!message.is_from_current_user">
+                      <span class="message-author">{{ message.user.name }}</span>
+                      <span class="message-time">{{ formatTime(message.created_at) }}</span>
                     </div>
-                  </v-card-text>
-                </v-card>
+                    <div class="message-text">{{ message.message }}</div>
+                    <div class="message-status" v-if="message.is_from_current_user">
+                      <v-icon
+                        size="16"
+                        :color="message.status === 'read' ? 'primary' : 'grey'"
+                      >
+                        {{ message.status === 'read' ? 'mdi-check-all' : 'mdi-check' }}
+                      </v-icon>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-            
-            <!-- Пустое состояние -->
-            <div v-else class="d-flex align-center justify-center" style="height: 100%;">
-              <div class="text-center">
-                <v-icon size="64" color="grey">mdi-chat-outline</v-icon>
-                <h3 class="text-h6 mt-4">Выберите чат для начала общения</h3>
-              </div>
-            </div>
-            
-            <!-- Поле ввода -->
-            <v-card-actions v-if="selectedChat" class="message-input">
-              <v-text-field
+            </v-card-text>
+
+            <!-- Поле ввода сообщения -->
+            <v-card-actions class="pa-4">
+              <v-textarea
                 v-model="newMessage"
                 placeholder="Введите сообщение..."
-                outlined
-                dense
+                variant="outlined"
+                density="compact"
+                rows="1"
+                auto-grow
                 hide-details
-                @keyup.enter="sendMessage"
+                @keydown.enter.prevent="sendMessage"
+                class="flex-grow-1 mr-3"
+              ></v-textarea>
+              <v-btn
+                color="primary"
+                variant="elevated"
+                @click="sendMessage"
+                :disabled="!newMessage.trim()"
+                icon="mdi-send"
               >
-                <template v-slot:append>
-                  <v-btn icon @click="sendMessage" :disabled="!newMessage.trim()">
-                    <v-icon>mdi-send</v-icon>
-                  </v-btn>
-                </template>
-              </v-text-field>
+                <v-icon>mdi-send</v-icon>
+              </v-btn>
             </v-card-actions>
+          </v-card>
+
+          <!-- Заглушка когда чат не выбран -->
+          <v-card v-else class="chat-container">
+            <v-card-text class="text-center pa-8">
+              <v-icon size="64" color="grey-lighten-1">mdi-chat-outline</v-icon>
+              <div class="text-h6 text-medium-emphasis mt-4">Выберите чат</div>
+              <div class="text-body-2 text-medium-emphasis">
+                Выберите чат из списка слева или создайте новый
+              </div>
+            </v-card-text>
           </v-card>
         </v-col>
       </v-row>
-      </v-container>
-      
-      <!-- Диалог нового чата -->
-      <v-dialog v-model="showNewChatDialog" max-width="400">
+
+      <!-- Диалог создания нового чата -->
+      <v-dialog v-model="showNewChatDialog" max-width="500">
         <v-card>
-          <v-card-title>Новый чат</v-card-title>
+          <v-card-title class="text-h6">
+            <v-icon start>mdi-plus</v-icon>
+            Новый чат
+          </v-card-title>
           <v-card-text>
-            <v-text-field
-              v-model="newChatName"
-              label="Имя чата"
-              outlined
-              dense
-            ></v-text-field>
+            <v-form @submit.prevent="createChat">
+              <v-select
+                v-model="newChatForm.user_id"
+                :items="users"
+                item-title="name"
+                item-value="id"
+                label="Выберите пользователя"
+                variant="outlined"
+                density="compact"
+                required
+              >
+                <template v-slot:item="{ props, item }">
+                  <v-list-item v-bind="props">
+                    <v-list-item-title>{{ item.raw.name }}</v-list-item-title>
+                    <v-list-item-subtitle>{{ item.raw.email }}</v-list-item-subtitle>
+                  </v-list-item>
+                </template>
+              </v-select>
+            </v-form>
           </v-card-text>
           <v-card-actions>
             <v-spacer></v-spacer>
-            <v-btn text @click="showNewChatDialog = false">Отмена</v-btn>
-            <v-btn color="primary" @click="createNewChat">Создать</v-btn>
+            <v-btn
+              color="secondary"
+              @click="showNewChatDialog = false"
+            >
+              Отмена
+            </v-btn>
+            <v-btn
+              color="primary"
+              @click="createChat"
+              :disabled="!newChatForm.user_id"
+            >
+              Создать чат
+            </v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
-    </div>
+    </v-container>
   </Layout>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted, nextTick } from 'vue'
+import { useForm, router } from '@inertiajs/vue3'
 import Layout from '../Layout.vue'
 
-export default {
-  name: 'ChatIndex',
-  components: {
-    App
+// Props
+const props = defineProps({
+  chats: {
+    type: Array,
+    default: () => []
   },
-  data() {
-    return {
-      selectedChat: null,
-      newMessage: '',
-      showNewChatDialog: false,
-      newChatName: '',
-      chats: [
-        {
-          id: 1,
-          name: 'Иванов И.И.',
-          lastMessage: 'Добро пожаловать на курс!',
-          lastMessageTime: '10:30',
-          unreadCount: 2,
-          avatar: null,
-          messages: [
-            {
-              id: 1,
-              text: 'Добро пожаловать на курс!',
-              time: '10:30',
-              isOwn: false
-            },
-            {
-              id: 2,
-              text: 'Спасибо! Рад быть здесь.',
-              time: '10:32',
-              isOwn: true
-            },
-            {
-              id: 3,
-              text: 'Если у вас есть вопросы, не стесняйтесь спрашивать.',
-              time: '10:35',
-              isOwn: false
-            }
-          ]
-        },
-        {
-          id: 2,
-          name: 'Петров П.П.',
-          lastMessage: 'Когда будет следующая лекция?',
-          lastMessageTime: '09:15',
-          unreadCount: 0,
-          avatar: null,
-          messages: [
-            {
-              id: 1,
-              text: 'Когда будет следующая лекция?',
-              time: '09:15',
-              isOwn: false
-            }
-          ]
-        }
-      ]
-    }
-  },
-  methods: {
-    selectChat(chat) {
-      this.selectedChat = chat
-      this.$nextTick(() => {
-        this.scrollToBottom()
-      })
-    },
+  users: {
+    type: Array,
+    default: () => []
+  }
+})
+
+// Состояние
+const selectedChatId = ref(null)
+const selectedChat = ref(null)
+const messages = ref([])
+const newMessage = ref('')
+const showNewChatDialog = ref(false)
+const messagesContainer = ref(null)
+
+// Форма для нового чата
+const newChatForm = useForm({
+  user_id: null
+})
+
+// Вычисляемые свойства
+const currentChat = computed(() => {
+  return props.chats.find(chat => chat.id === selectedChatId.value)
+})
+
+// Методы
+const selectChat = (chatId) => {
+  selectedChatId.value = chatId
+  selectedChat.value = props.chats.find(chat => chat.id === chatId)
+  loadMessages()
+}
+
+const loadMessages = async () => {
+  if (!selectedChatId.value) return
+
+  try {
+    const response = await fetch(`/chat/${selectedChatId.value}/messages`)
+    const data = await response.json()
+    messages.value = data.data || []
     
-    sendMessage() {
-      if (!this.newMessage.trim() || !this.selectedChat) return
-      
-      const message = {
-        id: Date.now(),
-        text: this.newMessage,
-        time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
-        isOwn: true
-      }
-      
-      this.selectedChat.messages.push(message)
-      this.selectedChat.lastMessage = this.newMessage
-      this.selectedChat.lastMessageTime = message.time
-      this.newMessage = ''
-      
-      this.$nextTick(() => {
-        this.scrollToBottom()
-      })
-    },
-    
-    scrollToBottom() {
-      if (this.$refs.messagesContainer) {
-        this.$refs.messagesContainer.scrollTop = this.$refs.messagesContainer.scrollHeight
-      }
-    },
-    
-    createNewChat() {
-      if (!this.newChatName.trim()) return
-      
-      const newChat = {
-        id: Date.now(),
-        name: this.newChatName,
-        lastMessage: '',
-        lastMessageTime: '',
-        unreadCount: 0,
-        avatar: null,
-        messages: []
-      }
-      
-      this.chats.unshift(newChat)
-      this.newChatName = ''
-      this.showNewChatDialog = false
-      this.selectChat(newChat)
-    }
+    // Прокручиваем к последнему сообщению
+    await nextTick()
+    scrollToBottom()
+  } catch (error) {
+    console.error('Ошибка при загрузке сообщений:', error)
   }
 }
+
+const sendMessage = async () => {
+  if (!newMessage.value.trim() || !selectedChatId.value) return
+
+  try {
+    const response = await fetch(`/chat/${selectedChatId.value}/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({
+        message: newMessage.value.trim()
+      })
+    })
+
+    const data = await response.json()
+    
+    if (data.success) {
+      messages.value.push(data.message)
+      newMessage.value = ''
+      await nextTick()
+      scrollToBottom()
+    }
+  } catch (error) {
+    console.error('Ошибка при отправке сообщения:', error)
+  }
+}
+
+const createChat = () => {
+  if (!newChatForm.user_id) return
+
+  newChatForm.post('/chat', {
+    onSuccess: () => {
+      showNewChatDialog.value = false
+      newChatForm.reset()
+    }
+  })
+}
+
+const leaveChat = () => {
+  if (!selectedChatId.value) return
+
+  if (confirm('Вы уверены, что хотите покинуть этот чат?')) {
+    router.delete(`/chat/${selectedChatId.value}/leave`)
+  }
+}
+
+const scrollToBottom = () => {
+  if (messagesContainer.value) {
+    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+  }
+}
+
+const formatTime = (dateString) => {
+  const date = new Date(dateString)
+  return date.toLocaleTimeString('ru-RU', { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  })
+}
+
+const getInitials = (name) => {
+  return name.split(' ').map(word => word.charAt(0)).join('').toUpperCase().slice(0, 2)
+}
+
+// Жизненный цикл
+onMounted(() => {
+  // Если есть чаты, выбираем первый
+  if (props.chats.length > 0) {
+    selectChat(props.chats[0].id)
+  }
+})
 </script>
 
 <style scoped>
-.border-right {
-  border-right: 1px solid #e0e0e0;
+.chat-container {
+  height: 600px;
+  display: flex;
+  flex-direction: column;
 }
 
-.messages-container {
+.chat-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
-  max-height: calc(100vh - 200px);
+  max-height: 400px;
 }
 
-.message-wrapper {
+.messages-list {
+  padding: 16px;
+}
+
+.message-item {
   margin-bottom: 16px;
   display: flex;
 }
 
-.message-wrapper.message-own {
+.message-item.message-own {
   justify-content: flex-end;
 }
 
-.message {
-  background-color: #f5f5f5;
-}
-
-.message.message-own {
-  background-color: #e3f2fd;
-}
-
 .message-content {
+  max-width: 70%;
+  padding: 12px 16px;
+  border-radius: 18px;
+  background-color: rgb(var(--v-theme-surface-variant));
+}
+
+.message-item.message-own .message-content {
+  background-color: rgb(var(--v-theme-primary));
+  color: white;
+}
+
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 4px;
 }
 
+.message-author {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
 .message-time {
-  text-align: right;
+  font-size: 0.75rem;
+  opacity: 0.7;
 }
 
-.message-input {
-  border-top: 1px solid #e0e0e0;
-  padding: 16px;
+.message-text {
+  line-height: 1.4;
 }
 
-.active-chat {
-  background-color: #f5f5f5;
+.message-status {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.chat-item {
+  border-bottom: 1px solid rgb(var(--v-theme-outline-variant));
+}
+
+.chat-item:last-child {
+  border-bottom: none;
 }
 </style>
