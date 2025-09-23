@@ -1,0 +1,306 @@
+<template>
+  <Layout role="teacher">
+    <v-container fluid>
+      <!-- Заголовок -->
+      <v-row>
+        <v-col cols="12">
+          <div class="d-flex justify-space-between align-center mb-6">
+            <div>
+              <h1 class="text-h4 font-weight-bold mb-2">Создать урок</h1>
+              <p class="text-body-1 text-medium-emphasis">Добавьте новый урок к расписанию</p>
+            </div>
+            <v-btn
+              color="secondary"
+              variant="outlined"
+              @click="goBack"
+              prepend-icon="mdi-arrow-left"
+            >
+              Назад к списку
+            </v-btn>
+          </div>
+        </v-col>
+      </v-row>
+
+      <!-- Уведомления -->
+      <v-row v-if="page.props.flash?.error">
+        <v-col cols="12">
+          <v-alert
+            type="error"
+            variant="tonal"
+            closable
+          >
+            {{ page.props.flash.error }}
+          </v-alert>
+        </v-col>
+      </v-row>
+
+      <v-row v-if="form.value?.errors && Object.keys(form.value.errors || {}).length > 0">
+        <v-col cols="12">
+          <v-alert
+            type="error"
+            variant="tonal"
+            closable
+          >
+            <div v-for="(errors, field) in (form.value?.errors || {})" :key="field">
+              <div v-for="error in errors" :key="error" class="mb-1">
+                {{ error }}
+              </div>
+            </div>
+          </v-alert>
+        </v-col>
+      </v-row>
+
+      <!-- Форма создания урока -->
+      <v-row>
+        <v-col cols="12" md="8">
+          <v-card>
+            <v-card-title class="text-h6">
+              <v-icon start>mdi-plus</v-icon>
+              Информация об уроке
+            </v-card-title>
+            <v-card-text>
+              <v-form>
+                <v-row>
+                  <v-col cols="12">
+                    <v-text-field
+                      v-model="formTitle"
+                      label="Название урока"
+                      variant="outlined"
+                      density="compact"
+                      required
+                      :error-messages="form.value?.errors?.title || []"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12">
+                    <v-textarea
+                      v-model="formDescription"
+                      label="Описание урока"
+                      variant="outlined"
+                      density="compact"
+                      rows="4"
+                      :error-messages="form.value?.errors?.description || []"
+                    ></v-textarea>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-select
+                      v-model="formScheduleId"
+                      :items="schedules"
+                      item-title="display_name"
+                      item-value="id"
+                      label="Расписание"
+                      variant="outlined"
+                      density="compact"
+                      required
+                      :error-messages="form.value?.errors?.schedule_id || []"
+                    >
+                      <template v-slot:item="{ props, item }">
+                        <v-list-item v-bind="props">
+                          <v-list-item-title>{{ item.raw.subject?.name }} - {{ item.raw.group?.name }}</v-list-item-title>
+                          <v-list-item-subtitle>{{ item.raw.start_date }} - {{ item.raw.end_date }}</v-list-item-subtitle>
+                        </v-list-item>
+                      </template>
+                    </v-select>
+                  </v-col>
+                  <v-col cols="12">
+                    <v-file-input
+                      v-model="formFile"
+                      label="Файл урока (PDF, DOC, DOCX, PPT, PPTX, TXT)"
+                      variant="outlined"
+                      density="compact"
+                      accept=".pdf,.doc,.docx,.ppt,.pptx,.txt"
+                      prepend-icon="mdi-file-document"
+                      :error-messages="form.value?.errors?.file || []"
+                    ></v-file-input>
+                    <v-alert
+                      type="info"
+                      variant="tonal"
+                      class="mt-2"
+                    >
+                      Максимальный размер файла: 10MB
+                    </v-alert>
+                  </v-col>
+                </v-row>
+                <div class="d-flex justify-end gap-2 mt-4">
+                  <v-btn
+                    color="secondary"
+                    @click="goBack"
+                  >
+                    Отмена
+                  </v-btn>
+                  <v-btn
+                    color="primary"
+                    @click="createLesson"
+                    :loading="form.value?.processing"
+                    :disabled="form.value?.processing"
+                  >
+                    Создать урок
+                  </v-btn>
+                </div>
+              </v-form>
+            </v-card-text>
+          </v-card>
+        </v-col>
+        
+        <v-col cols="12" md="4">
+          <v-card>
+            <v-card-title class="text-h6">
+              <v-icon start>mdi-information</v-icon>
+              Информация
+            </v-card-title>
+            <v-card-text>
+              <div class="text-body-2 text-medium-emphasis mb-4">
+                <p>Создайте новый урок и добавьте его к одному из ваших расписаний.</p>
+                <p>Вы можете прикрепить файл с материалами урока.</p>
+              </div>
+              
+              <div v-if="selectedSchedule" class="mt-4">
+                <h3 class="text-h6 mb-2">Выбранное расписание:</h3>
+                <v-card variant="outlined">
+                  <v-card-text>
+                    <div class="text-subtitle-1 font-weight-medium">
+                      {{ selectedSchedule.subject?.name }}
+                    </div>
+                    <div class="text-body-2 text-medium-emphasis">
+                      Группа: {{ selectedSchedule.group?.name }}
+                    </div>
+                    <div class="text-body-2 text-medium-emphasis">
+                      Период: {{ selectedSchedule.start_date }} - {{ selectedSchedule.end_date }}
+                    </div>
+                  </v-card-text>
+                </v-card>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </v-container>
+  </Layout>
+</template>
+
+<script setup>
+import { ref, computed } from 'vue'
+import { usePage, router } from '@inertiajs/vue3'
+import Layout from '../../Layout.vue'
+import axios from 'axios'
+
+const page = usePage()
+
+// Props
+const props = defineProps({
+  schedules: {
+    type: Array,
+    default: () => []
+  }
+})
+
+// Форма
+const form = ref({
+  title: '',
+  description: '',
+  schedule_id: null,
+  file: null,
+  errors: {},
+  processing: false
+})
+
+// Вычисляемые свойства
+const selectedSchedule = computed(() => {
+  if (!form.value?.schedule_id) return null
+  return props.schedules.find(schedule => schedule.id === form.value.schedule_id)
+})
+
+// Computed свойства для формы
+const formTitle = computed({
+  get: () => form.value?.title || '',
+  set: (value) => {
+    if (form.value) form.value.title = value
+  }
+})
+
+const formDescription = computed({
+  get: () => form.value?.description || '',
+  set: (value) => {
+    if (form.value) form.value.description = value
+  }
+})
+
+const formScheduleId = computed({
+  get: () => form.value?.schedule_id || null,
+  set: (value) => {
+    if (form.value) form.value.schedule_id = value
+  }
+})
+
+const formFile = computed({
+  get: () => form.value?.file || null,
+  set: (value) => {
+    if (form.value) form.value.file = value
+  }
+})
+
+// Методы
+const goBack = () => {
+  router.visit('/teacher/lessons')
+}
+
+const createLesson = async () => {
+  // Проверяем обязательные поля
+  if (!form.value?.title || !form.value?.schedule_id) {
+    alert('Пожалуйста, заполните все обязательные поля')
+    return
+  }
+
+  console.log('Отправка формы:', form.value)
+  
+  form.value.processing = true
+  form.value.errors = {}
+
+  try {
+    const formData = new FormData()
+    formData.append('title', form.value?.title || '')
+    formData.append('description', form.value?.description || '')
+    formData.append('schedule_id', form.value?.schedule_id || '')
+    if (form.value?.file) {
+      console.log('Добавляем файл в FormData:', form.value.file)
+      console.log('Тип файла:', form.value.file.type)
+      console.log('Имя файла:', form.value.file.name)
+      formData.append('file', form.value.file)
+    }
+
+    const response = await axios.post('/teacher/lessons', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+
+    console.log('Урок создан успешно', response.data)
+    
+    // Перенаправляем на страницу уроков
+    router.visit('/teacher/lessons')
+    
+  } catch (error) {
+    console.error('Ошибки при создании урока:', error)
+    
+    if (error.response?.status === 422) {
+      // Ошибки валидации
+      if (form.value) {
+        form.value.errors = error.response.data.errors || {}
+      }
+    } else {
+      // Другие ошибки
+      alert('Ошибка при создании урока: ' + (error.response?.data?.message || error.message))
+    }
+  } finally {
+    if (form.value) {
+      form.value.processing = false
+    }
+  }
+}
+</script>
+
+<style scoped>
+.v-card {
+  border-radius: 12px;
+}
+</style>

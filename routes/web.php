@@ -33,7 +33,7 @@ Route::middleware('auth')->group(function () {
     // Dashboard (альтернативный маршрут)
     Route::get('/dashboard', function () {
         return Inertia::render('Dashboard');
-    })->name('dashboard');
+    })->name('student.dashboard');
 
 // Курсы
 Route::get('/courses', function () {
@@ -353,9 +353,14 @@ Route::prefix('teacher')->middleware(['auth', 'teacher'])->group(function () {
         return Inertia::render('Teacher/Courses/Show', ['course' => $course]);
     })->name('teacher.courses.show');
     
-    // Мои уроки (только просмотр)
+    // Мои уроки
     Route::get('/lessons', [App\Http\Controllers\Teacher\LessonController::class, 'index'])->name('teacher.lessons.index');
-    Route::get('/lessons/{schedule}', [App\Http\Controllers\Teacher\LessonController::class, 'show'])->name('teacher.lessons.show');
+    Route::get('/lessons/create', [App\Http\Controllers\Teacher\LessonController::class, 'create'])->name('teacher.lessons.create');
+    Route::post('/lessons', [App\Http\Controllers\Teacher\LessonController::class, 'store'])->name('teacher.lessons.store');
+    Route::get('/lessons/{lesson}', [App\Http\Controllers\Teacher\LessonController::class, 'show'])->name('teacher.lessons.show');
+    Route::get('/lessons/{lesson}/edit', [App\Http\Controllers\Teacher\LessonController::class, 'edit'])->name('teacher.lessons.edit');
+    Route::put('/lessons/{lesson}', [App\Http\Controllers\Teacher\LessonController::class, 'update'])->name('teacher.lessons.update');
+    Route::delete('/lessons/{lesson}', [App\Http\Controllers\Teacher\LessonController::class, 'destroy'])->name('teacher.lessons.destroy');
     
     // Мои тесты
     Route::get('/tests', [App\Http\Controllers\Teacher\TestController::class, 'index'])->name('teacher.tests.index');
@@ -383,9 +388,31 @@ Route::prefix('teacher')->middleware(['auth', 'teacher'])->group(function () {
     Route::get('/students/student/{student}', [App\Http\Controllers\Teacher\StudentController::class, 'showStudent'])->name('teacher.students.student');
     
     // Расписание
-    Route::get('/schedule', function () {
-        return Inertia::render('Teacher/Schedule/Index');
-    })->name('teacher.schedule.index');
+    Route::get('/schedule', [App\Http\Controllers\Teacher\ScheduleController::class, 'index'])->name('teacher.schedule.index');
+    Route::post('/schedule', [App\Http\Controllers\Teacher\ScheduleController::class, 'store'])->name('teacher.schedule.store');
+    Route::get('/schedule/{schedule}', [App\Http\Controllers\Teacher\ScheduleController::class, 'show'])->name('teacher.schedule.show');
+    Route::put('/schedule/{schedule}', [App\Http\Controllers\Teacher\ScheduleController::class, 'update'])->name('teacher.schedule.update');
+    Route::delete('/schedule/{schedule}', [App\Http\Controllers\Teacher\ScheduleController::class, 'destroy'])->name('teacher.schedule.destroy');
+    
+    // Управление силлабусами в расписании
+    Route::post('/schedule/{schedule}/syllabuses', [App\Http\Controllers\Teacher\ScheduleController::class, 'addSyllabus'])->name('teacher.schedule.add-syllabus');
+    Route::delete('/schedule/{schedule}/syllabuses/{syllabus}', [App\Http\Controllers\Teacher\ScheduleController::class, 'removeSyllabus'])->name('teacher.schedule.remove-syllabus');
+    
+    // Управление уроками в расписании
+    Route::post('/schedule/{schedule}/lessons', [App\Http\Controllers\Teacher\ScheduleController::class, 'addLesson'])->name('teacher.schedule.add-lesson');
+    Route::delete('/schedule/{schedule}/lessons/{lesson}', [App\Http\Controllers\Teacher\ScheduleController::class, 'removeLesson'])->name('teacher.schedule.remove-lesson');
+    Route::patch('/schedule/{schedule}/lessons/reorder', [App\Http\Controllers\Teacher\ScheduleController::class, 'reorderLessons'])->name('teacher.schedule.reorder-lessons');
+    
+    // Управление силлабусами
+    Route::get('/syllabuses', [App\Http\Controllers\Teacher\SyllabusController::class, 'index'])->name('teacher.syllabuses.index');
+    Route::get('/syllabuses/create', [App\Http\Controllers\Teacher\SyllabusController::class, 'create'])->name('teacher.syllabuses.create');
+    Route::post('/syllabuses', [App\Http\Controllers\Teacher\SyllabusController::class, 'store'])->name('teacher.syllabuses.store');
+    Route::get('/syllabuses/{syllabus}', [App\Http\Controllers\Teacher\SyllabusController::class, 'show'])->name('teacher.syllabuses.show');
+    Route::get('/syllabuses/{syllabus}/edit', [App\Http\Controllers\Teacher\SyllabusController::class, 'edit'])->name('teacher.syllabuses.edit');
+    Route::put('/syllabuses/{syllabus}', [App\Http\Controllers\Teacher\SyllabusController::class, 'update'])->name('teacher.syllabuses.update');
+    Route::delete('/syllabuses/{syllabus}', [App\Http\Controllers\Teacher\SyllabusController::class, 'destroy'])->name('teacher.syllabuses.destroy');
+    Route::get('/syllabuses/{syllabus}/download', [App\Http\Controllers\Teacher\SyllabusController::class, 'download'])->name('teacher.syllabuses.download');
+    Route::get('/syllabuses/{syllabus}/preview', [App\Http\Controllers\Teacher\SyllabusController::class, 'preview'])->name('teacher.syllabuses.preview');
     
     // Материалы
     Route::get('/materials', function () {
@@ -410,4 +437,7 @@ Route::prefix('teacher')->middleware(['auth', 'teacher'])->group(function () {
     Route::get('/settings', function () {
         return Inertia::render('Teacher/Settings/Index');
     })->name('teacher.settings.index');
+    
+    // Чат
+    Route::get('/chat', [App\Http\Controllers\ChatController::class, 'index'])->name('teacher.chat.index');
 });

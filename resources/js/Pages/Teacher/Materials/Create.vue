@@ -1,12 +1,12 @@
 <template>
-  <TeacherApp>
+  <Layout role="teacher">
     <v-container fluid>
       <h1>Добавить материал</h1>
       <p>Добавьте новый учебный материал</p>
     </v-container>
-  </TeacherApp>
+  </Layout>
 </template>
 
 <script setup>
-import TeacherApp from '../TeacherApp.vue'
+import Layout from '../../Layout.vue'
 </script>

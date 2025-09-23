@@ -1,5 +1,5 @@
 <template>
-  <TeacherApp>
+  <Layout role="teacher">
     <v-container fluid>
       <!-- Заголовок -->
       <v-row>
@@ -319,13 +319,13 @@
         </v-card>
       </v-dialog>
     </v-container>
-  </TeacherApp>
+  </Layout>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 import { useForm, usePage } from '@inertiajs/vue3'
-import TeacherApp from '../TeacherApp.vue'
+import Layout from '../../Layout.vue'
 
 const page = usePage()
 

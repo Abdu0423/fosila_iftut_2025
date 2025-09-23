@@ -52,8 +52,8 @@ class AuthController extends Controller
             }
 
             if ($user->role_id == 2) {
-                Log::info('Перенаправление учителя на /teacher');
-                return redirect('/teacher');
+                Log::info('Перенаправление учителя на /teacher/');
+                return redirect('/teacher/');
             }
 
             if ($user->role_id == 3) {

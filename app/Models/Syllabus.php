@@ -86,6 +86,12 @@ class Syllabus extends Model
             return null;
         }
 
+        // Определяем контекст по текущему маршруту
+        $currentRoute = request()->route();
+        if ($currentRoute && str_contains($currentRoute->getName(), 'teacher')) {
+            return route('teacher.syllabuses.download', $this->id);
+        }
+
         return route('admin.syllabuses.download', $this->id);
     }
 
@@ -100,6 +106,12 @@ class Syllabus extends Model
 
         // Для PDF файлов можно показать предварительный просмотр
         if ($this->file_type === 'application/pdf') {
+            // Определяем контекст по текущему маршруту
+            $currentRoute = request()->route();
+            if ($currentRoute && str_contains($currentRoute->getName(), 'teacher')) {
+                return route('teacher.syllabuses.preview', $this->id);
+            }
+            
             return route('admin.syllabuses.preview', $this->id);
         }
 

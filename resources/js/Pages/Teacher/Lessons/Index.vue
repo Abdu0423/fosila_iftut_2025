@@ -1,5 +1,5 @@
 <template>
-  <TeacherApp>
+  <Layout role="teacher">
     <v-container fluid>
       <!-- Заголовок -->
       <v-row>
@@ -7,9 +7,16 @@
           <div class="d-flex justify-space-between align-center mb-6">
             <div>
               <h1 class="text-h4 font-weight-bold mb-2">Мои уроки</h1>
-              <p class="text-body-1 text-medium-emphasis">Просмотр ваших уроков и студентов</p>
+              <p class="text-body-1 text-medium-emphasis">Управление уроками из ваших расписаний</p>
             </div>
             <div class="d-flex gap-2">
+              <v-btn
+                color="primary"
+                @click="navigateTo('/teacher/lessons/create')"
+                prepend-icon="mdi-plus"
+              >
+                Создать урок
+              </v-btn>
               <v-btn
                 color="info"
                 @click="navigateTo('/teacher/students')"
@@ -220,15 +227,35 @@
                      </v-list-item-subtitle>
                     
                     <template v-slot:append>
-                      <v-btn
-                        color="primary"
-                        variant="text"
-                        size="small"
-                        @click="navigateTo(`/teacher/lessons/${lesson.id}`)"
-                        prepend-icon="mdi-eye"
-                      >
-                        Просмотр
-                      </v-btn>
+                      <div class="d-flex gap-2">
+                        <v-btn
+                          color="primary"
+                          variant="text"
+                          size="small"
+                          @click="navigateTo(`/teacher/lessons/${lesson.id}`)"
+                          prepend-icon="mdi-eye"
+                        >
+                          Просмотр
+                        </v-btn>
+                        <v-btn
+                          color="secondary"
+                          variant="text"
+                          size="small"
+                          @click="navigateTo(`/teacher/lessons/${lesson.id}/edit`)"
+                          prepend-icon="mdi-pencil"
+                        >
+                          Редактировать
+                        </v-btn>
+                        <v-btn
+                          color="error"
+                          variant="text"
+                          size="small"
+                          @click="deleteLesson(lesson)"
+                          prepend-icon="mdi-delete"
+                        >
+                          Удалить
+                        </v-btn>
+                      </div>
                     </template>
                   </v-list-item>
                 </v-list>
@@ -238,13 +265,13 @@
         </v-col>
       </v-row>
     </v-container>
-  </TeacherApp>
+  </Layout>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useForm, usePage } from '@inertiajs/vue3'
-import TeacherApp from '../TeacherApp.vue'
+import { useForm, usePage, router } from '@inertiajs/vue3'
+import Layout from '../../Layout.vue'
 
 const page = usePage()
 
@@ -321,6 +348,19 @@ const getDayOfWeekText = (day) => {
     'sunday': 'Воскресенье'
   }
   return days[day] || day
+}
+
+const deleteLesson = (lesson) => {
+  if (confirm(`Вы уверены, что хотите удалить урок "${lesson.title}"?`)) {
+    router.delete(`/teacher/lessons/${lesson.id}`, {
+      onSuccess: () => {
+        console.log('Урок удален успешно')
+      },
+      onError: (errors) => {
+        console.error('Ошибка при удалении урока:', errors)
+      }
+    })
+  }
 }
 
 

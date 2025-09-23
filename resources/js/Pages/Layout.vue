@@ -212,6 +212,7 @@ const menuItems = computed(() => {
         { title: 'Оценки', icon: 'mdi-star', route: '/teacher/grades' },
         { title: 'Мои студенты', icon: 'mdi-account-group', route: '/teacher/students' },
         { title: 'Расписание', icon: 'mdi-calendar-clock', route: '/teacher/schedule' },
+        { title: 'Силлабусы', icon: 'mdi-file-document-multiple', route: '/teacher/syllabuses' },
         { title: 'Материалы', icon: 'mdi-file-multiple', route: '/teacher/materials' },
         { title: 'Отчеты', icon: 'mdi-chart-bar', route: '/teacher/reports' },
         { title: 'Профиль', icon: 'mdi-account', route: '/teacher/profile' },
