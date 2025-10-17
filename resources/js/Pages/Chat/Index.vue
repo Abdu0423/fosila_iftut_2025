@@ -1,5 +1,5 @@
 <template>
-  <Layout role="admin">
+  <Layout>
     <v-container fluid>
       <!-- Заголовок -->
       <v-row>
@@ -376,6 +376,7 @@ const formatTime = (dateString) => {
 }
 
 const getInitials = (name) => {
+  if (!name) return '??'
   return name.split(' ').map(word => word.charAt(0)).join('').toUpperCase().slice(0, 2)
 }
 

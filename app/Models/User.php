@@ -67,9 +67,9 @@ class User extends Authenticatable
         return $this->belongsToMany(Course::class, 'course_student');
     }
 
-    public function groups()
+    public function group()
     {
-        return $this->belongsToMany(Group::class, 'group_student');
+        return $this->belongsTo(Group::class);
     }
 
     public function lessons()
@@ -84,16 +84,28 @@ class User extends Authenticatable
 
     public function isAdmin()
     {
+        // Если роль не загружена, загружаем её
+        if (!$this->relationLoaded('role')) {
+            $this->load('role');
+        }
         return $this->role && $this->role->name === 'admin';
     }
 
     public function isTeacher()
     {
+        // Если роль не загружена, загружаем её
+        if (!$this->relationLoaded('role')) {
+            $this->load('role');
+        }
         return $this->role && $this->role->name === 'teacher';
     }
 
     public function isStudent()
     {
+        // Если роль не загружена, загружаем её
+        if (!$this->relationLoaded('role')) {
+            $this->load('role');
+        }
         return $this->role && $this->role->name === 'student';
     }
 

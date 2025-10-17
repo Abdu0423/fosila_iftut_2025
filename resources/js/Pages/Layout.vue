@@ -222,26 +222,33 @@ const menuItems = computed(() => {
     
     default: // student
       return [
-        { title: 'Главная', icon: 'mdi-home', route: '/dashboard' },
-        //{ title: 'Мои курсы', icon: 'mdi-book-open-variant', route: '/courses' },
-        { title: 'Расписание', icon: 'mdi-calendar', route: '/schedule' },
-        { title: 'Задания', icon: 'mdi-clipboard-text', route: '/assignments' },
-        { title: 'Чат', icon: 'mdi-chat', route: '/chat' },
-        { title: 'Библиотека', icon: 'mdi-library', route: '/library' },
-        { title: 'Оценки', icon: 'mdi-star', route: '/grades' }
+        { title: 'Главная', icon: 'mdi-home', route: '/student/' },
+        //{ title: 'Мои курсы', icon: 'mdi-book-open-variant', route: '/student/courses' },
+        { title: 'Расписание', icon: 'mdi-calendar', route: '/student/schedule' },
+        { title: 'Задания', icon: 'mdi-clipboard-text', route: '/student/assignments' },
+        { title: 'Чат', icon: 'mdi-chat', route: '/student/chat' },
+        { title: 'Библиотека', icon: 'mdi-library', route: '/student/library' },
+        { title: 'Оценки', icon: 'mdi-star', route: '/student/grades' }
       ]
   }
 })
 
 // Методы
 const navigateTo = (route) => {
-  if (!isActiveRoute(route)) {
-    router.visit(route)
-  }
+  router.visit(route)
 }
 
 const isActiveRoute = (route) => {
-  return window.location.pathname === route
+  const currentPath = window.location.pathname
+  // Для точного совпадения
+  if (currentPath === route) {
+    return true
+  }
+  // Для маршрута '/' проверяем точное совпадение
+  if (route === '/student/' && currentPath === '/student') {
+    return true
+  }
+  return false
 }
 
 const goToProfile = () => {

@@ -19,20 +19,24 @@ class StudentController extends Controller
         // Получаем все группы, где преподает учитель
         $groups = Group::whereHas('schedules', function($query) use ($teacher) {
             $query->where('teacher_id', $teacher->id);
-        })->with(['students' => function($query) {
-            $query->whereHas('role', function($roleQuery) {
-                $roleQuery->where('name', 'student');
-            })->orderBy('name');
-        }])->orderBy('name')->get();
+        })->orderBy('name')->get();
 
         return Inertia::render('Teacher/Students/Index', [
             'groups' => $groups->map(function($group) {
+                // Получаем студентов этой группы через прямое отношение
+                $students = User::where('group_id', $group->id)
+                    ->whereHas('role', function($query) {
+                        $query->where('name', 'student');
+                    })
+                    ->orderBy('name')
+                    ->get();
+
                 return [
                     'id' => $group->id,
                     'name' => $group->name,
                     'full_name' => $group->full_name,
-                    'students_count' => $group->students->count(),
-                    'students' => $group->students->map(function($student) {
+                    'students_count' => $students->count(),
+                    'students' => $students->map(function($student) {
                         return [
                             'id' => $student->id,
                             'name' => $student->name,
@@ -126,24 +130,20 @@ class StudentController extends Controller
         $teacher = Auth::user();
         
         // Проверяем, что студент учится в группе, где преподает учитель
-        $hasAccess = $student->groups()
-            ->whereHas('schedules', function($query) use ($teacher) {
-                $query->where('teacher_id', $teacher->id);
-            })->exists();
+        $hasAccess = $student->group && 
+            Schedule::where('group_id', $student->group->id)
+                ->where('teacher_id', $teacher->id)
+                ->exists();
             
         if (!$hasAccess) {
             abort(403, 'У вас нет доступа к этому студенту');
         }
 
-        // Получаем группы студента, где преподает учитель
-        $groups = $student->groups()
-            ->whereHas('schedules', function($query) use ($teacher) {
-                $query->where('teacher_id', $teacher->id);
-            })
-            ->with(['schedules' => function($query) use ($teacher) {
-                $query->where('teacher_id', $teacher->id)
-                    ->with(['lesson', 'subject']);
-            }])
+        // Получаем группу студента, где преподает учитель
+        $group = $student->group;
+        $schedules = Schedule::where('group_id', $group->id)
+            ->where('teacher_id', $teacher->id)
+            ->with(['lesson', 'subject'])
             ->get();
 
         return Inertia::render('Teacher/Students/StudentShow', [
@@ -157,12 +157,12 @@ class StudentController extends Controller
                 'phone' => $student->phone,
                 'address' => $student->address,
             ],
-            'groups' => $groups->map(function($group) {
-                return [
+            'groups' => [
+                [
                     'id' => $group->id,
                     'name' => $group->name,
                     'full_name' => $group->full_name,
-                    'schedules' => $group->schedules->map(function($schedule) {
+                    'schedules' => $schedules->map(function($schedule) {
                         return [
                             'id' => $schedule->id,
                             'lesson_title' => $schedule->lesson->title ?? 'Урок без названия',
@@ -175,8 +175,8 @@ class StudentController extends Controller
                             'is_active' => $schedule->is_active ?? true,
                         ];
                     })
-                ];
-            })
+                ]
+            ]
         ]);
     }
 }

@@ -23,77 +23,100 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Защищенные маршруты (требуют аутентификации)
-Route::middleware('auth')->group(function () {
-    // Главная страница
+// Маршруты для студентов
+Route::prefix('student')->middleware(['auth', 'student'])->group(function () {
+    // Главная страница студента
     Route::get('/', function () {
         return Inertia::render('Dashboard');
-    })->name('dashboard');
+    })->name('student.dashboard');
 
     // Dashboard (альтернативный маршрут)
     Route::get('/dashboard', function () {
         return Inertia::render('Dashboard');
-    })->name('student.dashboard');
+    })->name('student.dashboard.alternative');
 
-// Курсы
-Route::get('/courses', function () {
-    return Inertia::render('Courses/Index');
-})->name('courses.index');
+    // Курсы
+    Route::get('/courses', function () {
+        return Inertia::render('Courses/Index');
+    })->name('student.courses.index');
 
-Route::get('/courses/{course}', function ($course) {
-    return Inertia::render('Courses/Show', ['course' => $course]);
-})->name('courses.show');
+    Route::get('/courses/{course}', function ($course) {
+        return Inertia::render('Courses/Show', ['course' => $course]);
+    })->name('student.courses.show');
 
-// Расписание
-Route::get('/schedule', function () {
-    return Inertia::render('Schedule/Index');
-})->name('schedule.index');
+    // Расписание
+    Route::get('/schedule', [App\Http\Controllers\Student\ScheduleController::class, 'index'])->name('student.schedule.index');
 
-// Задания
-Route::get('/assignments', function () {
-    return Inertia::render('Assignments/Index');
-})->name('assignments.index');
+    // Задания
+    Route::get('/assignments', function () {
+        return Inertia::render('Assignments/Index');
+    })->name('student.assignments.index');
 
-Route::get('/assignments/{assignment}', function ($assignment) {
-    return Inertia::render('Assignments/Show', ['assignment' => $assignment]);
-})->name('assignments.show');
+    Route::get('/assignments/{assignment}', function ($assignment) {
+        return Inertia::render('Assignments/Show', ['assignment' => $assignment]);
+    })->name('student.assignments.show');
 
-// Чат
-Route::get('/chat', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
-Route::get('/chat/{chat}', [App\Http\Controllers\ChatController::class, 'show'])->name('chat.show');
-Route::post('/chat', [App\Http\Controllers\ChatController::class, 'store'])->name('chat.store');
-Route::post('/chat/{chat}/messages', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('chat.send-message');
-Route::get('/chat/{chat}/messages', [App\Http\Controllers\ChatController::class, 'getMessages'])->name('chat.get-messages');
-Route::post('/chat/{chat}/read', [App\Http\Controllers\ChatController::class, 'markAsRead'])->name('chat.mark-read');
-Route::delete('/chat/{chat}/leave', [App\Http\Controllers\ChatController::class, 'leave'])->name('chat.leave');
+    // Чат
+    Route::get('/chat', [App\Http\Controllers\ChatController::class, 'index'])->name('student.chat.index');
+    Route::get('/chat/{chat}', [App\Http\Controllers\ChatController::class, 'show'])->name('student.chat.show');
+    Route::post('/chat', [App\Http\Controllers\ChatController::class, 'store'])->name('student.chat.store');
+    Route::post('/chat/{chat}/messages', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('student.chat.send-message');
+    Route::get('/chat/{chat}/messages', [App\Http\Controllers\ChatController::class, 'getMessages'])->name('student.chat.get-messages');
+    Route::post('/chat/{chat}/read', [App\Http\Controllers\ChatController::class, 'markAsRead'])->name('student.chat.mark-read');
+    Route::delete('/chat/{chat}/leave', [App\Http\Controllers\ChatController::class, 'leave'])->name('student.chat.leave');
 
-// Библиотека
-Route::get('/library', function () {
-    return Inertia::render('Library/Index');
-})->name('library.index');
+    // Библиотека
+    Route::get('/library', function () {
+        return Inertia::render('Library/Index');
+    })->name('student.library.index');
 
-// Тестовый маршрут для проверки уведомлений (удалить после тестирования)
-Route::get('/test-notification', function () {
-    return redirect()->back()->with('success', 'Тестовое уведомление об успехе!');
-})->name('test.notification');
+    // Оценки
+    Route::get('/grades', function () {
+        return Inertia::render('Grades/Index');
+    })->name('student.grades.index');
 
+    // Профиль
+    Route::get('/profile', function () {
+        return Inertia::render('Profile/Index');
+    })->name('student.profile.index');
 
-// Оценки
-Route::get('/grades', function () {
-    return Inertia::render('Grades/Index');
-})->name('grades.index');
+    // Настройки
+    Route::get('/settings', function () {
+        return Inertia::render('Settings/Index');
+    })->name('student.settings.index');
+});
 
-// Профиль
-Route::get('/profile', function () {
-    return Inertia::render('Profile/Index');
-})->name('profile.index');
+// Общие маршруты (для всех аутентифицированных пользователей)
+Route::middleware('auth')->group(function () {
+    // Главная страница (перенаправляет в зависимости от роли)
+    Route::get('/', function () {
+        $user = auth()->user();
+        if ($user->isAdmin()) {
+            return redirect()->route('admin.dashboard');
+        } elseif ($user->isTeacher()) {
+            return redirect()->route('teacher.dashboard');
+        } else {
+            return redirect()->route('student.dashboard');
+        }
+    })->name('dashboard');
 
-// Настройки
-Route::get('/settings', function () {
-    return Inertia::render('Settings/Index');
-})->name('settings.index');
+    // Dashboard (альтернативный маршрут)
+    Route::get('/dashboard', function () {
+        $user = auth()->user();
+        if ($user->isAdmin()) {
+            return redirect()->route('admin.dashboard');
+        } elseif ($user->isTeacher()) {
+            return redirect()->route('teacher.dashboard');
+        } else {
+            return redirect()->route('student.dashboard');
+        }
+    })->name('dashboard.alternative');
 
-}); // Закрытие группы auth
+    // Тестовый маршрут для проверки уведомлений (удалить после тестирования)
+    Route::get('/test-notification', function () {
+        return redirect()->back()->with('success', 'Тестовое уведомление об успехе!');
+    })->name('test.notification');
+});
 
 // Админ панель (требует аутентификации и прав администратора)
 Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
@@ -362,16 +385,17 @@ Route::prefix('teacher')->middleware(['auth', 'teacher'])->group(function () {
     Route::put('/lessons/{lesson}', [App\Http\Controllers\Teacher\LessonController::class, 'update'])->name('teacher.lessons.update');
     Route::delete('/lessons/{lesson}', [App\Http\Controllers\Teacher\LessonController::class, 'destroy'])->name('teacher.lessons.destroy');
     
-    // Мои тесты
+    // Мои тесты (привязаны к расписаниям)
     Route::get('/tests', [App\Http\Controllers\Teacher\TestController::class, 'index'])->name('teacher.tests.index');
-    Route::get('/tests/create', [App\Http\Controllers\Teacher\TestController::class, 'create'])->name('teacher.tests.create');
-    Route::post('/tests', [App\Http\Controllers\Teacher\TestController::class, 'store'])->name('teacher.tests.store');
-    Route::get('/tests/{test}', [App\Http\Controllers\Teacher\TestController::class, 'show'])->name('teacher.tests.show');
-    Route::get('/tests/{test}/edit', [App\Http\Controllers\Teacher\TestController::class, 'edit'])->name('teacher.tests.edit');
+    Route::get('/schedules/{schedule}/test', [App\Http\Controllers\Teacher\TestController::class, 'show'])->name('teacher.tests.show');
     Route::put('/tests/{test}', [App\Http\Controllers\Teacher\TestController::class, 'update'])->name('teacher.tests.update');
-    Route::delete('/tests/{test}', [App\Http\Controllers\Teacher\TestController::class, 'destroy'])->name('teacher.tests.destroy');
     Route::post('/tests/{test}/toggle-status', [App\Http\Controllers\Teacher\TestController::class, 'toggleStatus'])->name('teacher.tests.toggle-status');
-    Route::post('/tests/{test}/copy', [App\Http\Controllers\Teacher\TestController::class, 'copyTest'])->name('teacher.tests.copy');
+    
+    // Управление вопросами теста
+    Route::post('/tests/{test}/questions', [App\Http\Controllers\Teacher\QuestionController::class, 'store'])->name('teacher.questions.store');
+    Route::put('/tests/{test}/questions/{question}', [App\Http\Controllers\Teacher\QuestionController::class, 'update'])->name('teacher.questions.update');
+    Route::delete('/tests/{test}/questions/{question}', [App\Http\Controllers\Teacher\QuestionController::class, 'destroy'])->name('teacher.questions.destroy');
+    Route::patch('/tests/{test}/questions/reorder', [App\Http\Controllers\Teacher\QuestionController::class, 'reorder'])->name('teacher.questions.reorder');
     
     // Оценки студентов
     Route::get('/grades', function () {
@@ -440,4 +464,10 @@ Route::prefix('teacher')->middleware(['auth', 'teacher'])->group(function () {
     
     // Чат
     Route::get('/chat', [App\Http\Controllers\ChatController::class, 'index'])->name('teacher.chat.index');
+    Route::get('/chat/{chat}', [App\Http\Controllers\ChatController::class, 'show'])->name('teacher.chat.show');
+    Route::post('/chat', [App\Http\Controllers\ChatController::class, 'store'])->name('teacher.chat.store');
+    Route::post('/chat/{chat}/messages', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('teacher.chat.send-message');
+    Route::get('/chat/{chat}/messages', [App\Http\Controllers\ChatController::class, 'getMessages'])->name('teacher.chat.get-messages');
+    Route::post('/chat/{chat}/read', [App\Http\Controllers\ChatController::class, 'markAsRead'])->name('teacher.chat.mark-read');
+    Route::delete('/chat/{chat}/leave', [App\Http\Controllers\ChatController::class, 'leave'])->name('teacher.chat.leave');
 });

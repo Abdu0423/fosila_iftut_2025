@@ -45,6 +45,11 @@ class Group extends Model
         return $this->belongsToMany(User::class, 'group_student');
     }
 
+    public function schedules()
+    {
+        return $this->hasMany(Schedule::class);
+    }
+
     public function getStatusTextAttribute()
     {
         return [

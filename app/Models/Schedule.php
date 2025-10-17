@@ -70,6 +70,14 @@ class Schedule extends Model
     }
 
     /**
+     * Отношение к тесту (one-to-one)
+     */
+    public function test()
+    {
+        return $this->hasOne(Test::class);
+    }
+
+    /**
      * Получить отображаемое имя расписания
      */
     public function getDisplayNameAttribute()

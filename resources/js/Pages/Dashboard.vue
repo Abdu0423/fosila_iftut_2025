@@ -13,7 +13,7 @@
               color="primary"
               size="large"
               prepend-icon="mdi-play"
-              @click="navigateTo('/courses')"
+              @click="navigateTo('/student/courses')"
             >
               Начать обучение
             </v-btn>
@@ -85,7 +85,7 @@
                     <v-btn
                       color="primary"
                       size="small"
-                      @click="navigateTo(`/courses/${course.id}`)"
+                      @click="navigateTo(`/student/courses/${course.id}`)"
                     >
                       Продолжить
                     </v-btn>
@@ -267,22 +267,22 @@ const quickActions = ref([
   {
     title: 'Мои курсы',
     icon: 'mdi-book-open-variant',
-    route: '/courses'
+    route: '/student/courses'
   },
   {
     title: 'Мое расписание',
     icon: 'mdi-calendar',
-    route: '/schedule'
+    route: '/student/schedule'
   },
   {
     title: 'Мои задания',
     icon: 'mdi-clipboard-text',
-    route: '/assignments'
+    route: '/student/assignments'
   },
   {
     title: 'Мои оценки',
     icon: 'mdi-star',
-    route: '/grades'
+    route: '/student/grades'
   }
 ])
 

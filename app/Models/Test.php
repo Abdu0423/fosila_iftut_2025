@@ -12,28 +12,21 @@ class Test extends Model
     protected $fillable = [
         'title',
         'description',
-        'lesson_id',
+        'schedule_id',
         'created_by',
-        'type',
         'time_limit',
         'passing_score',
         'max_attempts',
         'is_active',
-        'is_public',
-        'start_date',
-        'end_date',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
-        'is_public' => 'boolean',
-        'start_date' => 'datetime',
-        'end_date' => 'datetime',
     ];
 
-    public function lesson()
+    public function schedule()
     {
-        return $this->belongsTo(Lesson::class);
+        return $this->belongsTo(Schedule::class);
     }
 
     public function creator()
@@ -48,18 +41,6 @@ class Test extends Model
 
     public function getStatusAttribute()
     {
-        if (!$this->is_active) {
-            return 'Неактивен';
-        }
-
-        if ($this->start_date && now()->lt($this->start_date)) {
-            return 'Ожидает';
-        }
-
-        if ($this->end_date && now()->gt($this->end_date)) {
-            return 'Завершен';
-        }
-
-        return 'Активен';
+        return $this->is_active ? 'Активен' : 'Неактивен';
     }
 }

@@ -57,17 +57,17 @@ class AuthController extends Controller
             }
 
             if ($user->role_id == 3) {
-                Log::info('Перенаправление студента на /dashboard');
-                return redirect('/dashboard');
+                Log::info('Перенаправление студента на /student/');
+                return redirect('/student/');
             }
 
-            // Если роль не определена, перенаправляем на dashboard
+            // Если роль не определена, перенаправляем на общий dashboard
             Log::warning('Неопределенная роль пользователя, перенаправление на /dashboard', [
                 'user_id' => $user->id,
                 'role_id' => $user->role_id,
                 'role_name' => $user->role ? $user->role->name : 'no role'
             ]);
-            return redirect()->intended('/dashboard');
+            return redirect()->intended('/');
         }
 
         Log::warning('Неудачная попытка входа', ['email' => $credentials['email']]);
